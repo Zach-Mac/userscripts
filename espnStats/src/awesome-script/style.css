@@ -1,0 +1,6 @@
+/* global css */
+/* Note: might conflict with existing styles if not in shadow DOM */
+
+.highlighted {
+  background-color: #fff3cd !important;
+}
