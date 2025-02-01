@@ -7,6 +7,7 @@ import { getEventsFromColumn, refreshEventColors } from './utils/habitica.js'
 import { msToHHMM } from './utils/utils.js'
 import { createSignal } from 'solid-js'
 import { TimeCalc } from './timeCalc.jsx'
+import { TaskTools } from './taskTools.jsx'
 
 const [dupeEvents, setDupeEvents] = createSignal<Record<string, number>>({})
 
@@ -23,7 +24,10 @@ const initCalendar = observe(document.body, () => {
 
 	const handleCreateCal = () => {
 		const initialEvents = getEventsFromColumn(dailiesColumn)
-		state.calendar = createCalendar(initialEvents, dailiesColumn.clientHeight)
+		state.calendar = createCalendar(
+			initialEvents,
+			dailiesColumn.clientHeight
+		)
 	}
 	const handleDeleteCal = () => {
 		state.calendar?.destroy()
@@ -108,18 +112,33 @@ const initTimeDisplay = observe(document.body, () => {
 	return true
 })
 
+const initTaskTools = observe(document.body, () => {
+	const dailiesColumn = document.querySelector('.tasks-column.daily')
+	if (!dailiesColumn) return false
+
+	dailiesColumn.appendChild(TaskTools())
+
+	return true
+})
+
 observe(document.body, () => {
 	// hide habits column if screen is small
 	if (window.innerWidth < 1000) {
-		const habits = document.querySelector('.tasks-column.habit') as HTMLElement
+		const habits = document.querySelector(
+			'.tasks-column.habit'
+		) as HTMLElement
 		if (habits) habits.style.display = 'none'
 	} else {
-		const habits = document.querySelector('.tasks-column.habit') as HTMLElement
+		const habits = document.querySelector(
+			'.tasks-column.habit'
+		) as HTMLElement
 		if (habits) habits.style.display = 'block'
 	}
 
 	// hide rewards column
-	const rewards = document.querySelector('.tasks-column.reward') as HTMLElement
+	const rewards = document.querySelector(
+		'.tasks-column.reward'
+	) as HTMLElement
 	if (rewards) rewards.style.display = 'none'
 
 	// Update calendar display
@@ -149,7 +168,10 @@ observe(document.body, () => {
 		for (const eventName of duplicateEvents) {
 			// add eventduration to dupeEvents[title]
 			if (dupeEvents()[eventName] !== eventDurations[eventName]) {
-				setDupeEvents({ ...dupeEvents(), [eventName]: eventDurations[eventName] })
+				setDupeEvents({
+					...dupeEvents(),
+					[eventName]: eventDurations[eventName]
+				})
 			}
 		}
 
@@ -158,14 +180,15 @@ observe(document.body, () => {
 		const calendarEl = document.querySelector('#calendar') as HTMLElement
 		if (calendarEl) {
 			const currentHeight = state.calendar.getOption('height')
-			const idealHeight = Math.max(sortableTasks.clientHeight, window.innerHeight * 0.9)
+			const idealHeight = Math.max(
+				sortableTasks.clientHeight,
+				window.innerHeight * 0.9
+			)
 			if (currentHeight !== idealHeight) {
 				state.calendar.setOption('height', idealHeight)
 			}
 		}
 	}
-
-	// TODO: count time
 
 	// TODO: track dailies finishes
 
