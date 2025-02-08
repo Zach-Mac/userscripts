@@ -4,7 +4,7 @@
 // @description This is a userscript.
 // @match       https://habitica.com/
 // @grant       GM_addStyle
-// @version     0.0.0
+// @version     0.0.1
 // @author      process.env.AUTHOR
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/ui@0.7
