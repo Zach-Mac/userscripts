@@ -4,6 +4,7 @@
 // @description This is a userscript.
 // @match       https://habitica.com/
 // @version     0.0.1
+// @downloadURL https://github.com/Zach-Mac/userscripts/raw/refs/heads/master/HabiticaTime/dist/awesome-script.user.js
 // @author      Zach-Mac
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/ui@0.7
