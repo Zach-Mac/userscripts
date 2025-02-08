@@ -5,6 +5,7 @@
 // @match       https://habitica.com/
 // @grant       GM_addStyle
 // @version     0.0.1
+// @downloadURL https://github.com/Zach-Mac/userscripts/raw/refs/heads/master/HabiticaTime/dist/awesome-script.user.js
 // @author      process.env.AUTHOR
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/ui@0.7
