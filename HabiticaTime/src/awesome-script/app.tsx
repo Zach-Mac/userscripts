@@ -24,10 +24,7 @@ const initCalendar = observe(document.body, () => {
 
 	const handleCreateCal = () => {
 		const initialEvents = getEventsFromColumn(dailiesColumn)
-		state.calendar = createCalendar(
-			initialEvents,
-			dailiesColumn.clientHeight
-		)
+		state.calendar = createCalendar(initialEvents, dailiesColumn.clientHeight)
 	}
 	const handleDeleteCal = () => {
 		state.calendar?.destroy()
@@ -124,21 +121,15 @@ const initTaskTools = observe(document.body, () => {
 observe(document.body, () => {
 	// hide habits column if screen is small
 	if (window.innerWidth < 1000) {
-		const habits = document.querySelector(
-			'.tasks-column.habit'
-		) as HTMLElement
+		const habits = document.querySelector('.tasks-column.habit') as HTMLElement
 		if (habits) habits.style.display = 'none'
 	} else {
-		const habits = document.querySelector(
-			'.tasks-column.habit'
-		) as HTMLElement
+		const habits = document.querySelector('.tasks-column.habit') as HTMLElement
 		if (habits) habits.style.display = 'block'
 	}
 
 	// hide rewards column
-	const rewards = document.querySelector(
-		'.tasks-column.reward'
-	) as HTMLElement
+	const rewards = document.querySelector('.tasks-column.reward') as HTMLElement
 	if (rewards) rewards.style.display = 'none'
 
 	// Update calendar display
@@ -180,10 +171,7 @@ observe(document.body, () => {
 		const calendarEl = document.querySelector('#calendar') as HTMLElement
 		if (calendarEl) {
 			const currentHeight = state.calendar.getOption('height')
-			const idealHeight = Math.max(
-				sortableTasks.clientHeight,
-				window.innerHeight * 0.9
-			)
+			const idealHeight = Math.max(sortableTasks.clientHeight, window.innerHeight * 0.9)
 			if (currentHeight !== idealHeight) {
 				state.calendar.setOption('height', idealHeight)
 			}

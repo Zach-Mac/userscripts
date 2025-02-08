@@ -137,3 +137,15 @@ export function getEventsFromColumn(column: Element): EventInput[] {
 
 	return events
 }
+
+export function clickSaveButton() {
+	console.debug('clicking save')
+	const buttons = document.querySelectorAll('button.btn.btn-secondary')
+	for (const button of buttons as NodeListOf<HTMLButtonElement>) {
+		console.debug('button', button)
+		if (button.textContent.trim() === 'Save') {
+			button.click()
+			return true
+		}
+	}
+}
