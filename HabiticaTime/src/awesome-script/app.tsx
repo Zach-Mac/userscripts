@@ -3,17 +3,29 @@ import { observe } from '@violentmonkey/dom'
 
 import { createCalendar } from './utils/calendar.js'
 import { state } from './global.js'
-import { getEventsFromColumn, refreshEventColors } from './utils/habitica.js'
+import {
+	getEventsFromColumn,
+	getEventsFromSavedHabitNote,
+	getSavedHabitElement,
+	refreshEventColors
+} from './utils/habitica.js'
 import { msToHHMM } from './utils/utils.js'
 import { createSignal } from 'solid-js'
 import { TimeCalc } from './timeCalc.jsx'
 import { TaskTools } from './taskTools.jsx'
 
+const MOBILE_BREAKPOINT_WIDTH = 770
+
 const [dupeEvents, setDupeEvents] = createSignal<Record<string, number>>({})
+const [showMore, setShowMore] = createSignal(false)
+const [wrapperHeight, setWrapperHeight] = createSignal(0)
 
 const initCalendar = observe(document.body, () => {
 	const dailiesColumn = document.querySelector('.tasks-column.daily')
 	if (!dailiesColumn) return false
+
+	const habitColumn = document.querySelector('.tasks-column.habit')
+	if (!habitColumn) return false
 
 	let timeColumn = document.querySelector('.tasks-column.time')
 	if (timeColumn) return false
@@ -22,13 +34,31 @@ const initCalendar = observe(document.body, () => {
 	timeColumn.className = 'tasks-column col-lg-3 col-md-6 time'
 	dailiesColumn.after(timeColumn)
 
+	// const calendarHeight = dailiesColumn.clientHeight
+	setWrapperHeight(dailiesColumn.clientHeight)
+	let calendarHeight = 6000
+
 	const handleCreateCal = () => {
 		const initialEvents = getEventsFromColumn(dailiesColumn)
-		state.calendar = createCalendar(initialEvents, dailiesColumn.clientHeight)
+		state.calendar = createCalendar(initialEvents, calendarHeight)
 	}
 	const handleDeleteCal = () => {
 		state.calendar?.destroy()
 		localStorage.removeItem('events')
+	}
+	const handleSaveCal = () => {
+		// localStorage.setItem('events', JSON.stringify(state.calendar.getEvents()))
+		const eventsString = JSON.stringify(state.calendar.getEvents())
+		console.log('SAVING EVENTS:')
+		console.log(eventsString)
+
+		// save to clipboard
+		navigator.clipboard.writeText(eventsString)
+	}
+	const handleLoadCal = () => {
+		const savedEvents = getEventsFromSavedHabitNote(habitColumn)
+		console.debug(savedEvents)
+		state.calendar = createCalendar(savedEvents, calendarHeight)
 	}
 	const printEvents = () => {
 		for (const event of state.calendar.getEvents()) {
@@ -36,60 +66,80 @@ const initCalendar = observe(document.body, () => {
 		}
 	}
 
-	const Wrapper = () => (
-		<div>
-			{/* display dupeEvents */}
-			{Object.entries(dupeEvents()).map(([eventName, duration]) => (
-				<div>
-					{eventName}: {msToHHMM(duration)}
+	function handleMinTimeChange(e: Event) {
+		const input = e.target as HTMLInputElement
+		state.calendar?.setOption('slotMinTime', input.value + ':00')
+	}
+	function handleMaxTimeChange(e: Event) {
+		const input = e.target as HTMLInputElement
+		const plus24hours = parseInt(input.value.split(':')[0]) + 24
+		input.value = plus24hours.toString().padStart(2, '0') + ':' + input.value.split(':')[1]
+		state.calendar?.setOption('slotMaxTime', input.value + ':00')
+	}
+	function setCalendarHeight(height: number) {
+		calendarHeight = height
+		state.calendar?.setOption('height', height)
+	}
+
+	const Wrapper = () => {
+		let wrapperEl: HTMLDivElement
+		return (
+			<div>
+				<h2>Calendar</h2>
+				<button onClick={handleCreateCal}>Create</button>
+				<button onClick={handleDeleteCal}>Delete</button>
+				<button onClick={handleSaveCal}>Copy to Clipboard</button>
+				<button onClick={handleLoadCal}>Load from Saved</button>
+				<button onClick={() => setShowMore(!showMore())}>
+					{showMore() ? 'Hide More' : 'Show More'}
+				</button>
+				<br />
+				{showMore() && (
+					<>
+						{/* Moved time inputs and print events here */}
+						<label>Min Time</label>
+						<input type="time" value="03:00" onInput={handleMinTimeChange} />
+						<label>Max Time</label>
+						<input type="time" value="02:00" onInput={handleMaxTimeChange} />
+						<button onClick={printEvents}>Print Events</button>
+						<br />
+
+						<label>Calendar Height</label>
+						<input
+							type="number"
+							value={calendarHeight}
+							onInput={e =>
+								setCalendarHeight(parseInt((e.target as HTMLInputElement).value))
+							}
+						/>
+						<br />
+
+						{/* display dupeEvents */}
+						{Object.entries(dupeEvents()).map(([eventName, duration]) => (
+							<div>
+								{eventName}: {msToHHMM(duration)}
+							</div>
+						))}
+					</>
+				)}
+
+				<div
+					id="calendar-wrapper"
+					ref={wrapperEl}
+					style={{ height: wrapperHeight() + 'px', overflow: 'auto' }}
+				>
+					<div id="calendar"></div>
 				</div>
-			))}
-			<button onClick={handleCreateCal}>Create Calendar</button>
-			<button onClick={handleDeleteCal}>Delete Calendar</button>
-			<button onClick={printEvents}>Print Events</button>
-			<button
-				onClick={() => {
-					const currentHeight = state.calendar.getOption('height')
-					state.calendar.setOption(
-						'height',
-						(typeof currentHeight === 'number'
-							? currentHeight
-							: parseInt(currentHeight)) + 100
-					)
-					// increase #wrapper height
-					// const wrapper = document.getElementById('wrapper')
-					// const currentHeight = wrapper.clientHeight
-					// wrapper.style.height = `${currentHeight + 100}px`
-				}}
-			>
-				Height++
-			</button>
-			<button
-				onClick={() => {
-					const currentHeight = state.calendar.getOption('height')
-					state.calendar.setOption(
-						'height',
-						(typeof currentHeight === 'number'
-							? currentHeight
-							: parseInt(currentHeight)) - 100
-					)
-					// const wrapper = document.getElementById('wrapper')
-					// const currentHeight = wrapper.clientHeight
-					// wrapper.style.height = `${currentHeight - 100}px`
-				}}
-			>
-				Height--
-			</button>
-			{/* <div id="wrapper" style="height: 90vh; overflow: scroll;"> */}
-			<div id="calendar"></div>
-			{/* </div> */}
-		</div>
-	)
+			</div>
+		)
+	}
 	render(Wrapper, timeColumn)
+
+	console.log('wrapperEl')
 
 	const savedEvents = JSON.parse(localStorage.getItem('events') || '[]')
 	if (savedEvents.length > 0) {
-		state.calendar = createCalendar(savedEvents, dailiesColumn.clientHeight)
+		state.calendar = createCalendar(savedEvents, calendarHeight)
 		// state.calendar = createCalendar(savedEvents, 5000)
 	}
 
@@ -167,16 +217,48 @@ observe(document.body, () => {
 		}
 
 		// Set calendar height
+		// const sortableTasks = dailiesColumn.querySelector('.sortable-tasks')
+		// const calendarEl = document.querySelector('#calendar') as HTMLElement
+		// if (calendarEl) {
+		// 	const currentHeight = state.calendar.getOption('height')
+
+		// 	let idealHeight = window.innerHeight * 0.9
+		// 	if (window.innerWidth > MOBILE_BREAKPOINT_WIDTH) {
+		// 		idealHeight = Math.max(sortableTasks.clientHeight, idealHeight)
+		// 	}
+
+		// 	if (currentHeight !== idealHeight) {
+		// 		state.calendar.setOption('height', idealHeight)
+		// 	}
+		// }
 		const sortableTasks = dailiesColumn.querySelector('.sortable-tasks')
 		const calendarEl = document.querySelector('#calendar') as HTMLElement
 		if (calendarEl) {
-			const currentHeight = state.calendar.getOption('height')
-			const idealHeight = Math.max(sortableTasks.clientHeight, window.innerHeight * 0.9)
-			if (currentHeight !== idealHeight) {
-				state.calendar.setOption('height', idealHeight)
+			let idealHeight = window.innerHeight * 0.9
+			if (window.innerWidth > MOBILE_BREAKPOINT_WIDTH) {
+				idealHeight = Math.max(sortableTasks.clientHeight, idealHeight)
+			}
+
+			if (wrapperHeight() !== idealHeight) {
+				setWrapperHeight(idealHeight)
 			}
 		}
 	}
+
+	// Hide Saved habit note
+	const habitsColumn = document.querySelector('.tasks-column.habit')
+	console.debug('habitsColumn', habitsColumn)
+	if (habitsColumn) {
+		const savedHabitElement = getSavedHabitElement(habitsColumn)
+		console.debug('savedHabitElement', savedHabitElement)
+		if (savedHabitElement) {
+			const taskNotes = savedHabitElement.querySelector('.task-notes')
+			console.debug('taskNotes', taskNotes)
+			taskNotes.style.display = 'none'
+		}
+	}
+
+	// TODO: highlight dailies with % in notes
 
 	// TODO: track dailies finishes
 
@@ -193,7 +275,5 @@ observe(document.body, () => {
 
 	// TODO: don't make deleting calendar necessary. if delete, then delete for just today
 
-	// TODO: edit toggle to add/delete events
-
-	// TODO: zoom in and out separate from slot duration
+	// TODO: edit toggle to add events?
 })

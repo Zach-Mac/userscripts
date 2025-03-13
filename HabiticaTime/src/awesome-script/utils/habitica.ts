@@ -4,6 +4,8 @@ import { getRoundedNow } from './utils'
 import { createEvent, setEventExtendedProp, setEventProp } from './events'
 import { colors } from '../global'
 
+const SAVED_HABIT_TASK_TITLE = 'Saved'
+
 function getTaskColor(task: Element) {
 	const leftControl = task.querySelector('.left-control') as HTMLElement
 	const style = window.getComputedStyle(leftControl)
@@ -58,21 +60,27 @@ export function refreshEventColors(column: Element, events: EventApi[]) {
 
 	const tasks = Array.from(taskWrapper)
 
+	const customEventColor = colors.customEvent.hsl().string()
+	const finishedEventColor = colors.finishedEvent.hsl().string()
+
 	for (const event of events) {
 		if (event.extendedProps.selected) continue
 
 		if (event.extendedProps.customEvent) {
-			const customEventColor = colors.customEvent.hsl().string()
-			setEventColor(event, customEventColor)
+			if (event.extendedProps.finished) {
+				setEventColor(event, finishedEventColor)
+				console.debug('setting finished event color', event.title)
+			} else {
+				setEventColor(event, customEventColor)
+				console.debug('setting custom event color', event.title, event)
+			}
 
 			continue
 		}
 
 		const task = tasks.find(task => getTaskTitle(task) === event.title)
 		if (!task) {
-			const finishedEventColor = colors.finishedEvent.hsl().string()
 			setEventColor(event, finishedEventColor)
-
 			continue
 		}
 
@@ -91,10 +99,9 @@ export function getEventsFromColumn(column: Element): EventInput[] {
 	let totalMinutes = 0
 	let totalFullMinutes = 0
 
-	const now = getRoundedNow(5)
+	let startTime = getRoundedNow(5)
 
 	for (const task of taskWrapper) {
-		console.log(task)
 		const titleText = getTaskTitle(task)
 		const taskColor = getTaskColor(task)
 
@@ -103,21 +110,35 @@ export function getEventsFromColumn(column: Element): EventInput[] {
 
 		const eventColor = getEventColor(taskColor, taskFullMinutes)
 
-		console.log('asdf')
 		if (!taskMinutes && !taskFullMinutes) continue
-		console.log('asdf2')
 
-		const start = new Date(now.getTime())
-		start.setSeconds(0)
-		start.setMinutes(start.getMinutes() + totalMinutes + totalFullMinutes)
+		console.log(titleText, taskMinutes, taskFullMinutes)
+
+		const start = new Date(startTime.getTime())
+		start.setMinutes(start.getMinutes())
+
+		const durationOver5m = taskMinutes >= 5 || taskFullMinutes >= 5
+
+		console.log(
+			'start',
+			start,
+			'durationOver5m',
+			durationOver5m,
+			'start.getMinutes()',
+			start.getMinutes(),
+			'start.getMinutes() % 5',
+			start.getMinutes() % 5
+		)
 
 		// if start minutes is not divisible by 5, round it up
-		if (start.getMinutes() % 5 !== 0) {
+		if (durationOver5m && start.getMinutes() % 5 !== 0) {
 			start.setMinutes(start.getMinutes() + 5 - (start.getMinutes() % 5))
 		}
 
 		const end = new Date(start.getTime())
 		end.setMinutes(end.getMinutes() + taskMinutes + taskFullMinutes)
+
+		startTime = new Date(end.getTime())
 
 		totalMinutes += taskMinutes
 		totalFullMinutes += taskFullMinutes
@@ -130,10 +151,32 @@ export function getEventsFromColumn(column: Element): EventInput[] {
 			borderColor: eventColor
 		})
 
-		console.log('pushing', newEvent)
+		console.debug('pushing', newEvent)
 
 		events.push(newEvent)
 	}
+
+	return events
+}
+
+export function getSavedHabitElement(column: Element): Element {
+	const taskWrapper = column.querySelectorAll('.task-wrapper')
+
+	for (const task of taskWrapper) {
+		const titleText = getTaskTitle(task)
+		if (titleText !== SAVED_HABIT_TASK_TITLE) continue
+
+		return task
+	}
+}
+
+export function getEventsFromSavedHabitNote(column: Element): EventInput[] {
+	const task = getSavedHabitElement(column)
+	if (!task) return []
+
+	const taskNotes = getTaskNotes(task)
+
+	const events = JSON.parse(taskNotes) as EventInput[]
 
 	return events
 }

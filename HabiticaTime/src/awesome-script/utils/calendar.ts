@@ -8,8 +8,17 @@ import { createEvent } from './events'
 
 export function createCalendar(initialEvents: EventSourceInput, height: number): Calendar {
 	const calendarEl = document.getElementById('calendar')
+	const wrapperEl = document.getElementById('calendar-wrapper')
 
 	let calendar: Calendar
+
+	let currentHeight = height
+
+	const calendarHeaderSize = 64.3
+
+	// FOR 3AM TO 2AM
+	// const minHeight = 5954
+	// this has timePerPixel: 14108.025217243143
 
 	function getTimeAtMousePosition(mouseY: number): number {
 		const timeGridEl = calendarEl.querySelector('.fc-timegrid-slots')
@@ -43,33 +52,6 @@ export function createCalendar(initialEvents: EventSourceInput, height: number):
 		return rect.top + rect.height / 2
 	}
 
-	function zoomZoom(level: number) {
-		const timeGridBody = calendarEl.querySelector('.fc-timegrid-body') as HTMLElement
-		const currentZoomLevel = parseFloat(timeGridBody.style.zoom) || 1
-
-		const newZoomLevel = currentZoomLevel + level
-
-		timeGridBody.style.zoom = `${newZoomLevel}`
-
-		const timeGridSlots = calendarEl.querySelector('.fc-timegrid-slots table') as HTMLElement
-		const timeGridCols = calendarEl.querySelector('.fc-timegrid-cols table') as HTMLElement
-
-		const newWidth = 100 / newZoomLevel
-
-		timeGridSlots.style.width = `${newWidth}%`
-		timeGridCols.style.width = `${newWidth}%`
-
-		// change font size
-		// const oldFontSize = parseFloat(window.getComputedStyle(timeGridSlots).fontSize)
-		// const newFontSize = 1 / newZoomLevel
-		// timeGridSlots.style.fontSize = `${newFontSize}em`
-		// timeGridCols.style.fontSize = `${newFontSize}em`
-
-		// console.log('oldFontSize', oldFontSize, 'newFontSize', newFontSize)
-
-		calendar.render()
-	}
-
 	function adjustScroll(mouseTimeBefore: number, mouseY: number) {
 		const oldScrollTime = getScrollTime()
 		const mouseTimeAfter = getTimeAtMousePosition(mouseY)
@@ -81,36 +63,130 @@ export function createCalendar(initialEvents: EventSourceInput, height: number):
 		return { mouseTimeAfter, newScrollTime }
 	}
 
+	function getScrollOffsetForTime(msToScroll: number) {
+		const slotMinTimeStr = calendar.getOption('slotMinTime').toString()
+		const slotMaxTimeStr = calendar.getOption('slotMaxTime').toString()
+		const slotMinTimeMs = parseTime(slotMinTimeStr)
+		const slotMaxTimeMs = parseTime(slotMaxTimeStr)
+		const totalDurationMs = slotMaxTimeMs - slotMinTimeMs
+
+		const calendarHeight = wrapperEl.scrollHeight + calendarHeaderSize
+
+		const pxPerMs = calendarHeight / totalDurationMs
+		const offsetMs = msToScroll - slotMinTimeMs
+		return offsetMs * pxPerMs
+	}
+
+	function scrollToTime(timeInput: number | string) {
+		console.log('scrollToTime', timeInput)
+
+		// Convert string time to ms
+		let msToScroll: number
+		if (typeof timeInput === 'string') {
+			msToScroll = parseTime(timeInput)
+		} else {
+			msToScroll = timeInput
+		}
+
+		console.log('msToScroll', msToScroll)
+		console.log('wrapperEl.scrollHeight', wrapperEl.scrollHeight)
+
+		const offsetPx = getScrollOffsetForTime(msToScroll)
+
+		console.log('offsetPx', offsetPx)
+
+		// Scroll the wrapper
+		wrapperEl.scrollTop = offsetPx
+	}
+
+	function adjustWrapperScroll(mouseTimeBefore: number, mouseY: number) {
+		if (!wrapperEl) return
+
+		const mouseTimeAfter = getTimeAtMousePosition(mouseY)
+		const beforePx = getScrollOffsetForTime(mouseTimeBefore)
+		const afterPx = getScrollOffsetForTime(mouseTimeAfter)
+		wrapperEl.scrollTop += beforePx - afterPx
+	}
+
 	function slotDurationZoom(value: number, mouseY?: number) {
-		const newZoomLevel = state.currentZoomLevel + value
+		const newZoomLevel = state.currZoomLevel + value
 
 		if (newZoomLevel < 0 || newZoomLevel >= zoomLevels.length) return
 
-		state.currentZoomLevel = newZoomLevel
+		state.currZoomLevel = newZoomLevel
 
-		console.debug('slotDurationZoom', newZoomLevel, zoomLevels[newZoomLevel])
+		calendar.pauseRendering()
+
+		calendar.setOption('slotDuration', zoomLevels[state.currZoomLevel].slotDuration)
+		calendar.setOption('slotLabelInterval', zoomLevels[state.currZoomLevel].slotLabelInterval)
+
+		calendar.resumeRendering()
+	}
+
+	function zoom(shouldZoomIn: boolean, mouseY?: number) {
+		const minHeight = zoomLevels[state.currZoomLevel].minHeight
+
+		const lastLevelZoomIndex = state.currZoomLevel - 1
+		const lastLevelMinHeight = zoomLevels[lastLevelZoomIndex]
+			? zoomLevels[lastLevelZoomIndex].minHeight
+			: zoomLevels[0].minHeight
 
 		const mouseTimeBefore = getTimeAtMousePosition(mouseY)
 
-		calendar.setOption('slotDuration', zoomLevels[state.currentZoomLevel])
-		// TODO: with levels have a zoom value to zoom as well (only for some levels prob just to add some between 1-5m)
-		// also first check with changing fontsize with zoomzoom
+		// const heightDelta = lastLevelMinHeight / 5 || minHeight / 5
+		// slot height delta = 10% of current slot height
+		// const heightDelta = currentHeight / 5
+		const heightDelta = (currentHeight / 17) ** 1.27
+		// https://www.desmos.com/calculator/umut86azby
+
+		console.debug(
+			'BEFORE zoom',
+			'currentHeight',
+			currentHeight,
+			'zoomLevel',
+			state.currZoomLevel,
+			'minHeight',
+			minHeight,
+			'lastLevelMinHeight',
+			lastLevelMinHeight,
+			'heightDelta',
+			heightDelta
+		)
+
+		if (shouldZoomIn) {
+			if (currentHeight + heightDelta > (lastLevelMinHeight * 8) / 10) {
+				console.log(
+					'currentHeight',
+					currentHeight,
+					'heightDelta',
+					heightDelta,
+					'currentHeight + heightDelta',
+					currentHeight + heightDelta,
+					'(lastLevelMinHeight * 9) / 10',
+					(lastLevelMinHeight * 9) / 10
+				)
+				slotDurationZoom(-1, mouseY)
+				currentHeight = lastLevelMinHeight
+			} else {
+				currentHeight += heightDelta
+			}
+		} else {
+			if (currentHeight - heightDelta < minHeight) {
+				slotDurationZoom(1, mouseY)
+				currentHeight = minHeight - minHeight / 10
+			} else {
+				currentHeight -= heightDelta
+			}
+		}
+
+		if (currentHeight != calendar.getOption('height'))
+			calendar.setOption('height', currentHeight)
 
 		if (mouseY !== undefined) {
-			adjustScroll(mouseTimeBefore, mouseY)
+			adjustWrapperScroll(mouseTimeBefore, mouseY)
 		}
-	}
 
-	function zoomIn(mouseY?: number) {
-		console.debug('zoomIn', mouseY)
-		slotDurationZoom(-1, mouseY)
-		// zoomZoom(0.1)
-	}
-
-	function zoomOut(mouseY?: number) {
-		console.debug('zoomOut', mouseY)
-		slotDurationZoom(1, mouseY)
-		// zoomZoom(-0.1)
+		console.timeLog('zoom', 'after adjustWrapperScroll')
 	}
 
 	function selectAllEvents() {
@@ -141,27 +217,27 @@ export function createCalendar(initialEvents: EventSourceInput, height: number):
 		if (event.ctrlKey) {
 			if (event.key === '-' || event.key === '_') {
 				event.preventDefault()
-				zoomOut()
+				zoom(false)
 			} else if (event.key === '+' || event.key === '=' || event.key === '+') {
 				event.preventDefault()
-				zoomIn()
+				zoom(true)
 			}
 		}
 	})
 
-	const throttledZoom = throttle((mouseY: number, shouldZoomIn: boolean) => {
+	const throttledZoom = throttle((shouldZoomIn: boolean, mouseY: number) => {
 		if (shouldZoomIn) {
-			zoomIn(mouseY)
+			zoom(true, mouseY)
 		} else {
-			zoomOut(mouseY)
+			zoom(false, mouseY)
 		}
-	}, 10)
+	}, 5)
 
 	calendarEl.addEventListener('wheel', event => {
 		if (event.ctrlKey) {
 			event.preventDefault()
 			const mouseY = event.clientY
-			throttledZoom(mouseY, event.deltaY < 0)
+			throttledZoom(event.deltaY < 0, mouseY)
 		}
 	})
 
@@ -183,6 +259,7 @@ export function createCalendar(initialEvents: EventSourceInput, height: number):
 	})
 
 	const now = getRoundedNow(5)
+	const scrollTime = getMinutesAgoString(now, 30, false)
 
 	const calendarOptions: CalendarOptions = {
 		plugins: [timeGridPlugin, interactionPlugin],
@@ -190,12 +267,12 @@ export function createCalendar(initialEvents: EventSourceInput, height: number):
 		customButtons: {
 			zoomIn: {
 				text: '+',
-				click: () => zoomIn(),
+				click: () => zoom(true),
 				hint: 'Zoom in'
 			},
 			zoomOut: {
 				text: '-',
-				click: () => zoomOut(),
+				click: () => zoom(false),
 				hint: 'Zoom out'
 			},
 			selectAll: {
@@ -207,23 +284,28 @@ export function createCalendar(initialEvents: EventSourceInput, height: number):
 				text: 'Add',
 				click: () => addEvent(),
 				hint: 'Add event'
+			},
+			scroll: {
+				text: 'Scroll',
+				click: () => scrollToTime(getMinutesAgoString(getRoundedNow(5), 30, false)),
+				hint: 'Scroll to 9am'
 			}
 		},
 		titleFormat: { month: 'short', day: 'numeric' },
 		headerToolbar: {
 			// left: 'prev,next timeGridWeek,timeGridDay',
-			left: 'prev,next',
+			left: 'prev,next scroll',
 			center: 'title',
 			right: 'addEvent,selectAll zoomOut,zoomIn'
 		},
 		editable: true,
 		height,
-		slotDuration: zoomLevels[state.currentZoomLevel],
-		slotLabelInterval: { minutes: 30 },
+		slotDuration: zoomLevels[state.currZoomLevel].slotDuration,
+		slotLabelInterval: zoomLevels[state.currZoomLevel].slotLabelInterval,
 		slotMinTime: '03:00:00',
 		slotMaxTime: '26:00:00',
 		expandRows: true,
-		scrollTime: getMinutesAgoString(now, 30, false),
+		scrollTime,
 		nowIndicator: true,
 		selectable: true,
 		select: info => {
@@ -233,19 +315,32 @@ export function createCalendar(initialEvents: EventSourceInput, height: number):
 		allDaySlot: false,
 		events: initialEvents,
 		eventsSet: events => {
-			console.log('eventsSet', events)
+			console.debug('eventsSet', events)
 			localStorage.setItem('events', JSON.stringify(events))
 		},
 		eventDidMount: info => {
-			info.el.setAttribute('data-event-id', info.event.id)
+			const eventId = info.event.id
+			info.el.setAttribute('data-event-id', eventId)
+
+			// Handle event right click - delete event
+			info.el.addEventListener('contextmenu', jsEvent => {
+				jsEvent.preventDefault()
+				console.debug('contextMenu', eventId)
+
+				if (confirm(`Delete event "${info.event.title}"?`)) {
+					info.event.remove()
+				}
+			})
 		},
 		eventClick: info => {
+			console.debug('eventClick', info)
+
 			if (info.jsEvent.shiftKey) return
 			if (info.jsEvent.ctrlKey) return
 
-			if (confirm(`Delete event "${info.event.title}"?`)) {
-				info.event.remove()
-			}
+			// Handle left click - toggle finished
+			const finished = info.event.extendedProps.finished
+			info.event.setExtendedProp('finished', !finished)
 		},
 		eventAllow: (dropInfo, draggedEvent) => {
 			return !shiftPressed
@@ -274,6 +369,10 @@ export function createCalendar(initialEvents: EventSourceInput, height: number):
 	}
 
 	calendar.render()
+	console.debug('calendar.render() complete')
+
+	// scrollToTime(scrollTime)
+	scrollToTime('09:00:00')
 
 	return calendar
 }
