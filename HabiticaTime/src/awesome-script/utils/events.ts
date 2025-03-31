@@ -8,7 +8,7 @@ export function createEvent(event: {
 	borderColor?: string
 	customEvent?: boolean
 }): EventInput {
-	const uniqueId = Math.random().toString(36).substring(10)
+	const uniqueId = Math.random().toString(36).substring(2)
 	return {
 		id: uniqueId,
 		title: event.title,
