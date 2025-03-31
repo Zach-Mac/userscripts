@@ -9,16 +9,28 @@ import {
 	getSavedHabitElement,
 	refreshEventColors
 } from './utils/habitica.js'
-import { msToHHMM } from './utils/utils.js'
+import { getMinutesAgoString, getRoundedNow, msToHHMM } from './utils/utils.js'
 import { createSignal } from 'solid-js'
 import { TimeCalc } from './timeCalc.jsx'
 import { TaskTools } from './taskTools.jsx'
+import { TaskHighlighter } from './taskHighlighter.jsx'
+import { EventInput } from '@fullcalendar/core'
+import { register } from '@violentmonkey/shortcut'
 
 const MOBILE_BREAKPOINT_WIDTH = 770
 
 const [dupeEvents, setDupeEvents] = createSignal<Record<string, number>>({})
 const [showMore, setShowMore] = createSignal(false)
 const [wrapperHeight, setWrapperHeight] = createSignal(0)
+
+function playSound(url) {
+	const audio = new Audio(url)
+	audio.play()
+}
+
+function playNotification() {
+	playSound('https://habitica.com/static/audio/spacePenguinTheme/Chat.ogg')
+}
 
 const initCalendar = observe(document.body, () => {
 	const dailiesColumn = document.querySelector('.tasks-column.daily')
@@ -34,13 +46,11 @@ const initCalendar = observe(document.body, () => {
 	timeColumn.className = 'tasks-column col-lg-3 col-md-6 time'
 	dailiesColumn.after(timeColumn)
 
-	// const calendarHeight = dailiesColumn.clientHeight
 	setWrapperHeight(dailiesColumn.clientHeight)
-	let calendarHeight = 6000
 
 	const handleCreateCal = () => {
 		const initialEvents = getEventsFromColumn(dailiesColumn)
-		state.calendar = createCalendar(initialEvents, calendarHeight)
+		createCalendar(initialEvents)
 	}
 	const handleDeleteCal = () => {
 		state.calendar?.destroy()
@@ -58,7 +68,7 @@ const initCalendar = observe(document.body, () => {
 	const handleLoadCal = () => {
 		const savedEvents = getEventsFromSavedHabitNote(habitColumn)
 		console.debug(savedEvents)
-		state.calendar = createCalendar(savedEvents, calendarHeight)
+		createCalendar(savedEvents)
 	}
 	const printEvents = () => {
 		for (const event of state.calendar.getEvents()) {
@@ -75,10 +85,6 @@ const initCalendar = observe(document.body, () => {
 		const plus24hours = parseInt(input.value.split(':')[0]) + 24
 		input.value = plus24hours.toString().padStart(2, '0') + ':' + input.value.split(':')[1]
 		state.calendar?.setOption('slotMaxTime', input.value + ':00')
-	}
-	function setCalendarHeight(height: number) {
-		calendarHeight = height
-		state.calendar?.setOption('height', height)
 	}
 
 	const Wrapper = () => {
@@ -102,16 +108,6 @@ const initCalendar = observe(document.body, () => {
 						<label>Max Time</label>
 						<input type="time" value="02:00" onInput={handleMaxTimeChange} />
 						<button onClick={printEvents}>Print Events</button>
-						<br />
-
-						<label>Calendar Height</label>
-						<input
-							type="number"
-							value={calendarHeight}
-							onInput={e =>
-								setCalendarHeight(parseInt((e.target as HTMLInputElement).value))
-							}
-						/>
 						<br />
 
 						{/* display dupeEvents */}
@@ -139,8 +135,7 @@ const initCalendar = observe(document.body, () => {
 
 	const savedEvents = JSON.parse(localStorage.getItem('events') || '[]')
 	if (savedEvents.length > 0) {
-		state.calendar = createCalendar(savedEvents, calendarHeight)
-		// state.calendar = createCalendar(savedEvents, 5000)
+		createCalendar(savedEvents)
 	}
 
 	return true
@@ -163,9 +158,38 @@ const initTaskTools = observe(document.body, () => {
 	const dailiesColumn = document.querySelector('.tasks-column.daily')
 	if (!dailiesColumn) return false
 
-	dailiesColumn.appendChild(TaskTools())
+	render(
+		() => (
+			<div>
+				<TaskTools />
+				<TaskHighlighter />
+			</div>
+		),
+		dailiesColumn
+	)
 
 	return true
+})
+
+register('ctrl-space', () => {
+	console.debug('pressed ctrl-space')
+	// scroll window to top of timecalc
+	const timeCalc = document.querySelector('#timecalc')
+	if (timeCalc) timeCalc.scrollIntoView({ behavior: 'smooth' })
+	else console.error('timeCalc not found')
+
+	const now = getRoundedNow(5)
+	const scrollTime = getMinutesAgoString(now, 30, false)
+	state.scrollToTime(scrollTime)
+
+	Notification.requestPermission().then(result => {
+		console.log(result)
+	})
+
+	// const text = `HEY! Your task is now overdue.`
+	// const notification = new Notification('To do list', { body: text })
+
+	// playNotification()
 })
 
 observe(document.body, () => {
@@ -216,24 +240,9 @@ observe(document.body, () => {
 			}
 		}
 
-		// Set calendar height
-		// const sortableTasks = dailiesColumn.querySelector('.sortable-tasks')
-		// const calendarEl = document.querySelector('#calendar') as HTMLElement
-		// if (calendarEl) {
-		// 	const currentHeight = state.calendar.getOption('height')
-
-		// 	let idealHeight = window.innerHeight * 0.9
-		// 	if (window.innerWidth > MOBILE_BREAKPOINT_WIDTH) {
-		// 		idealHeight = Math.max(sortableTasks.clientHeight, idealHeight)
-		// 	}
-
-		// 	if (currentHeight !== idealHeight) {
-		// 		state.calendar.setOption('height', idealHeight)
-		// 	}
-		// }
 		const sortableTasks = dailiesColumn.querySelector('.sortable-tasks')
 		const calendarEl = document.querySelector('#calendar') as HTMLElement
-		if (calendarEl) {
+		if (calendarEl && sortableTasks) {
 			let idealHeight = window.innerHeight * 0.9
 			if (window.innerWidth > MOBILE_BREAKPOINT_WIDTH) {
 				idealHeight = Math.max(sortableTasks.clientHeight, idealHeight)
@@ -252,13 +261,11 @@ observe(document.body, () => {
 		const savedHabitElement = getSavedHabitElement(habitsColumn)
 		console.debug('savedHabitElement', savedHabitElement)
 		if (savedHabitElement) {
-			const taskNotes = savedHabitElement.querySelector('.task-notes')
+			const taskNotes = savedHabitElement.querySelector('.task-notes') as HTMLElement
 			console.debug('taskNotes', taskNotes)
 			taskNotes.style.display = 'none'
 		}
 	}
-
-	// TODO: highlight dailies with % in notes
 
 	// TODO: track dailies finishes
 

@@ -6,11 +6,6 @@ import { render } from 'solid-js/web'
 
 const [showEditButtons, setShowEditButtons] = createSignal(false)
 
-register('ctrl-alt-e', () => {
-	console.debug('clicked ctrl-alt-e')
-	setShowEditButtons(!showEditButtons())
-})
-
 function setRepeatEveryValue(value: string) {
 	observe(document.body, () => {
 		const optionDivs = document.querySelectorAll('.option')
@@ -129,6 +124,11 @@ function removeCreatedButtons() {
 
 let showButtonsObserver: () => void
 
+register('ctrl-alt-e', () => {
+	console.debug('clicked ctrl-alt-e')
+	setShowEditButtons(!showEditButtons())
+})
+
 const EditDailiesToggle = () => {
 	createEffect(() => {
 		if (showEditButtons()) {
@@ -155,25 +155,5 @@ const EditDailiesToggle = () => {
 		</button>
 	)
 }
-// const SkipDailiesToggle = () => {
-// 	return (
-// 		<button
-// 			onClick={() => {
-//                 setShowSkipButtons(!showSkipButtons())
-// 				if (showSkipButtons()) {
-//                     createSkipButtons()
-//                 } else {
-// 					removeCreatedButtons()
-// 				}
-// 			}}
-// 		>
-// 			{showSkipButtons() ? 'Stop skipping dailies' : 'Skip daily'}
-// 		</button>
-// 	)
-// }
 
-export const TaskTools = () => (
-	<div>
-		<EditDailiesToggle />
-	</div>
-)
+export const TaskTools = EditDailiesToggle

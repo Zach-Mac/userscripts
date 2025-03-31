@@ -1,17 +1,39 @@
-import { Calendar } from '@fullcalendar/core'
+import { Calendar, Duration, DurationInput } from '@fullcalendar/core'
 import Color from 'color'
 
 export const state = {
 	currZoomLevel: 2,
-	calendar: null as Calendar | null
+	calendar: null as Calendar | null,
+	scrollToTime: null as (timeInput: number | string) => void | null
 }
 
 const overheadHeight = 84.39080000000013
-function getDayHeight(slotMins: number): number {
+
+export function getHoursInDay(
+	slotMinTime: DurationInput | Duration,
+	slotMaxTime: DurationInput | Duration
+): number {
+	const slotMaxTimeHours = Number(slotMaxTime.split(':')[0])
+	const slotMinTimeHours = Number(slotMinTime.split(':')[0])
+
+	return slotMaxTimeHours - slotMinTimeHours
+}
+
+export function getDayHeight(slotMins: number, hours = 23): number {
 	const minSlotHeight = 21.2667
 	const slotsPerHour = 60 / slotMins
 	const hourHeight = minSlotHeight * slotsPerHour
-	return hourHeight * 23 + overheadHeight
+
+	if (state.calendar) {
+		const slotMaxTime = state.calendar.getOption('slotMaxTime')
+		const slotMinTime = state.calendar.getOption('slotMinTime')
+
+		hours = getHoursInDay(slotMinTime, slotMaxTime)
+	}
+
+	console.log('hours', hours)
+
+	return hourHeight * hours + overheadHeight
 }
 
 const dayHeights: Record<number, number> = {
@@ -39,13 +61,50 @@ const minHeights = {
 	'30': 1062.659,
 	'60': 573.5249000000001
 }
+// export const zoomLevels = [
+// 	{ slotDuration: '00:00:15', slotLabelInterval: { minutes: 1 }, minHeight: getDayHeight(0.25) },
+// 	{ slotDuration: '00:01:00', slotLabelInterval: { minutes: 5 }, minHeight: 29432.4368 },
+// 	{ slotDuration: '00:05:00', slotLabelInterval: { minutes: 30 }, minHeight: 5954 },
+// 	{ slotDuration: '00:10:00', slotLabelInterval: { minutes: 30 }, minHeight: 3019.1954 },
+// 	{ slotDuration: '00:15:00', slotLabelInterval: { minutes: 30 }, minHeight: 2040.9272 },
+// 	{ slotDuration: '00:30:00', slotLabelInterval: { minutes: 30 }, minHeight: 1062.659 }
+// ]
+
+function minHeight(slotMins: number) {
+	return (hours = 23) => getDayHeight(slotMins, hours)
+}
+
 export const zoomLevels = [
-	{ slotDuration: '00:00:15', slotLabelInterval: { minutes: 1 }, minHeight: getDayHeight(0.25) },
-	{ slotDuration: '00:01:00', slotLabelInterval: { minutes: 5 }, minHeight: 29432.4368 },
-	{ slotDuration: '00:05:00', slotLabelInterval: { minutes: 30 }, minHeight: 5954 },
-	{ slotDuration: '00:10:00', slotLabelInterval: { minutes: 30 }, minHeight: 3019.1954 },
-	{ slotDuration: '00:15:00', slotLabelInterval: { minutes: 30 }, minHeight: 2040.9272 },
-	{ slotDuration: '00:30:00', slotLabelInterval: { minutes: 30 }, minHeight: 1062.659 }
+	{
+		slotDuration: '00:00:15',
+		slotLabelInterval: { minutes: 1 },
+		minHeight: minHeight(0.25)
+	},
+	{
+		slotDuration: '00:01:00',
+		slotLabelInterval: { minutes: 5 },
+		minHeight: minHeight(1)
+	},
+	{
+		slotDuration: '00:05:00',
+		slotLabelInterval: { minutes: 30 },
+		minHeight: minHeight(5)
+	},
+	{
+		slotDuration: '00:10:00',
+		slotLabelInterval: { minutes: 30 },
+		minHeight: minHeight(10)
+	},
+	{
+		slotDuration: '00:15:00',
+		slotLabelInterval: { minutes: 30 },
+		minHeight: minHeight(15)
+	},
+	{
+		slotDuration: '00:30:00',
+		slotLabelInterval: { minutes: 30 },
+		minHeight: minHeight(30)
+	}
 ]
 // 5 minutes (default)
 

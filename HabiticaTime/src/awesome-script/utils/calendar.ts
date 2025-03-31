@@ -1,24 +1,40 @@
-import { EventSourceInput, Calendar, DateSelectArg, CalendarOptions } from '@fullcalendar/core'
+import {
+	EventSourceInput,
+	Calendar,
+	DateSelectArg,
+	CalendarOptions,
+	Duration
+} from '@fullcalendar/core'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import { addSelectionStyles, selectEvents, setupSelectionHandlers } from './selection'
 import { parseTime, msToHHMMSS, getRoundedNow, getMinutesAgoString, throttle } from './utils'
-import { colors, zoomLevels, state } from '../global'
+import { colors, zoomLevels, state, getHoursInDay, getDayHeight } from '../global'
 import { createEvent } from './events'
 
-export function createCalendar(initialEvents: EventSourceInput, height: number): Calendar {
+export function createCalendar(initialEvents: EventSourceInput): void {
 	const calendarEl = document.getElementById('calendar')
 	const wrapperEl = document.getElementById('calendar-wrapper')
 
 	let calendar: Calendar
 
-	let currentHeight = height
+	const slotMinTime: Duration = '03:00:00'
+	const slotMaxTime: Duration = '34:00:00'
+	const hours = getHoursInDay(slotMinTime, slotMaxTime)
+
+	const defaultHeight = zoomLevels[state.currZoomLevel].minHeight(hours)
+
+	console.log('defaultHeight', defaultHeight)
+
+	let currentHeight = defaultHeight
 
 	const calendarHeaderSize = 64.3
 
 	// FOR 3AM TO 2AM
+	// 3am to 2am is 23 hours
 	// const minHeight = 5954
 	// this has timePerPixel: 14108.025217243143
+	// pixelsPerHour = (5954 - 64.3) / 23 = 256.0739
 
 	function getTimeAtMousePosition(mouseY: number): number {
 		const timeGridEl = calendarEl.querySelector('.fc-timegrid-slots')
@@ -72,8 +88,15 @@ export function createCalendar(initialEvents: EventSourceInput, height: number):
 
 		const calendarHeight = wrapperEl.scrollHeight + calendarHeaderSize
 
+		console.log('totalDurationMs', totalDurationMs)
+		console.log('calendarHeight', calendarHeight)
+
 		const pxPerMs = calendarHeight / totalDurationMs
 		const offsetMs = msToScroll - slotMinTimeMs
+
+		console.log('pxPerMs', pxPerMs)
+		console.log('offsetMs', offsetMs)
+
 		return offsetMs * pxPerMs
 	}
 
@@ -94,6 +117,8 @@ export function createCalendar(initialEvents: EventSourceInput, height: number):
 		const offsetPx = getScrollOffsetForTime(msToScroll)
 
 		console.log('offsetPx', offsetPx)
+
+		console.log('wrapperEl.scrollTop', wrapperEl.scrollTop)
 
 		// Scroll the wrapper
 		wrapperEl.scrollTop = offsetPx
@@ -124,12 +149,12 @@ export function createCalendar(initialEvents: EventSourceInput, height: number):
 	}
 
 	function zoom(shouldZoomIn: boolean, mouseY?: number) {
-		const minHeight = zoomLevels[state.currZoomLevel].minHeight
+		const minHeight = zoomLevels[state.currZoomLevel].minHeight()
 
 		const lastLevelZoomIndex = state.currZoomLevel - 1
 		const lastLevelMinHeight = zoomLevels[lastLevelZoomIndex]
-			? zoomLevels[lastLevelZoomIndex].minHeight
-			: zoomLevels[0].minHeight
+			? zoomLevels[lastLevelZoomIndex].minHeight()
+			: zoomLevels[0].minHeight()
 
 		const mouseTimeBefore = getTimeAtMousePosition(mouseY)
 
@@ -185,8 +210,6 @@ export function createCalendar(initialEvents: EventSourceInput, height: number):
 		if (mouseY !== undefined) {
 			adjustWrapperScroll(mouseTimeBefore, mouseY)
 		}
-
-		console.timeLog('zoom', 'after adjustWrapperScroll')
 	}
 
 	function selectAllEvents() {
@@ -299,15 +322,46 @@ export function createCalendar(initialEvents: EventSourceInput, height: number):
 			right: 'addEvent,selectAll zoomOut,zoomIn'
 		},
 		editable: true,
-		height,
+		height: defaultHeight,
 		slotDuration: zoomLevels[state.currZoomLevel].slotDuration,
 		slotLabelInterval: zoomLevels[state.currZoomLevel].slotLabelInterval,
-		slotMinTime: '03:00:00',
-		slotMaxTime: '26:00:00',
+		slotMinTime,
+		slotMaxTime,
 		expandRows: true,
 		scrollTime,
 		nowIndicator: true,
 		selectable: true,
+		eventContent(renderProps, createElement) {
+			const start = renderProps.event.start
+			const end = renderProps.event.end
+
+			// Calculate duration in hours and minutes
+			const durationInMinutes = (end - start) / (1000 * 60)
+			const hours = Math.floor(durationInMinutes / 60)
+			const minutes = durationInMinutes % 60
+
+			const hoursString = hours > 0 ? `${hours}h` : ''
+			const spacer = hours > 0 && minutes > 0 ? ' ' : ''
+			const minutesString = minutes > 0 ? `${minutes}m` : ''
+
+			const formattedDuration = hoursString + spacer + minutesString
+
+			// Create the custom content
+			return createElement('div', { className: 'fc-event-main-frame' }, [
+				createElement(
+					'div',
+					{ className: 'fc-event-time' },
+					`${renderProps.timeText} (${formattedDuration})`
+				),
+				createElement('div', { className: 'fc-event-title-container' }, [
+					createElement(
+						'div',
+						{ className: ['fc-event-title fc-sticky'] },
+						renderProps.event.title
+					)
+				])
+			])
+		},
 		select: info => {
 			if (!shiftPressed) addEvent(info)
 			calendar.unselect()
@@ -371,8 +425,8 @@ export function createCalendar(initialEvents: EventSourceInput, height: number):
 	calendar.render()
 	console.debug('calendar.render() complete')
 
-	// scrollToTime(scrollTime)
-	scrollToTime('09:00:00')
+	scrollToTime(scrollTime)
 
-	return calendar
+	state.scrollToTime = scrollToTime
+	state.calendar = calendar
 }

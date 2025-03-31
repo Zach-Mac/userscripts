@@ -12,7 +12,7 @@
 // @grant       GM_addStyle
 // ==/UserScript==
 
-(function (web, dom, solidJs) {
+(function (web, dom, solidJs, ui) {
 'use strict';
 
 function _extends() {
@@ -15159,14 +15159,26 @@ var Color$1 = /*@__PURE__*/getDefaultExportFromCjs(color);
 
 const state = {
   currZoomLevel: 2,
-  calendar: null
+  calendar: null,
+  scrollToTime: null
 };
 const overheadHeight = 84.39080000000013;
-function getDayHeight(slotMins) {
+function getHoursInDay(slotMinTime, slotMaxTime) {
+  const slotMaxTimeHours = Number(slotMaxTime.split(':')[0]);
+  const slotMinTimeHours = Number(slotMinTime.split(':')[0]);
+  return slotMaxTimeHours - slotMinTimeHours;
+}
+function getDayHeight(slotMins, hours = 23) {
   const minSlotHeight = 21.2667;
   const slotsPerHour = 60 / slotMins;
   const hourHeight = minSlotHeight * slotsPerHour;
-  return hourHeight * 23 + overheadHeight;
+  if (state.calendar) {
+    const slotMaxTime = state.calendar.getOption('slotMaxTime');
+    const slotMinTime = state.calendar.getOption('slotMinTime');
+    hours = getHoursInDay(slotMinTime, slotMaxTime);
+  }
+  console.log('hours', hours);
+  return hourHeight * hours + overheadHeight;
 }
 const dayHeights = {
   1: 29348.046,
@@ -15180,42 +15192,54 @@ Object.entries(dayHeights).reduce((acc, [key, value]) => {
   acc[Number(key)] = value + overheadHeight;
   return acc;
 }, {});
+// export const zoomLevels = [
+// 	{ slotDuration: '00:00:15', slotLabelInterval: { minutes: 1 }, minHeight: getDayHeight(0.25) },
+// 	{ slotDuration: '00:01:00', slotLabelInterval: { minutes: 5 }, minHeight: 29432.4368 },
+// 	{ slotDuration: '00:05:00', slotLabelInterval: { minutes: 30 }, minHeight: 5954 },
+// 	{ slotDuration: '00:10:00', slotLabelInterval: { minutes: 30 }, minHeight: 3019.1954 },
+// 	{ slotDuration: '00:15:00', slotLabelInterval: { minutes: 30 }, minHeight: 2040.9272 },
+// 	{ slotDuration: '00:30:00', slotLabelInterval: { minutes: 30 }, minHeight: 1062.659 }
+// ]
+
+function minHeight(slotMins) {
+  return (hours = 23) => getDayHeight(slotMins, hours);
+}
 const zoomLevels = [{
   slotDuration: '00:00:15',
   slotLabelInterval: {
     minutes: 1
   },
-  minHeight: getDayHeight(0.25)
+  minHeight: minHeight(0.25)
 }, {
   slotDuration: '00:01:00',
   slotLabelInterval: {
     minutes: 5
   },
-  minHeight: 29432.4368
+  minHeight: minHeight(1)
 }, {
   slotDuration: '00:05:00',
   slotLabelInterval: {
     minutes: 30
   },
-  minHeight: 5954
+  minHeight: minHeight(5)
 }, {
   slotDuration: '00:10:00',
   slotLabelInterval: {
     minutes: 30
   },
-  minHeight: 3019.1954
+  minHeight: minHeight(10)
 }, {
   slotDuration: '00:15:00',
   slotLabelInterval: {
     minutes: 30
   },
-  minHeight: 2040.9272
+  minHeight: minHeight(15)
 }, {
   slotDuration: '00:30:00',
   slotLabelInterval: {
     minutes: 30
   },
-  minHeight: 1062.659
+  minHeight: minHeight(30)
 }];
 // 5 minutes (default)
 
@@ -15456,7 +15480,7 @@ function throttle(func, delay) {
 }
 
 function createEvent(event) {
-  const uniqueId = Math.random().toString(36).substring(10);
+  const uniqueId = Math.random().toString(36).substring(2);
   return {
     id: uniqueId,
     title: event.title,
@@ -15506,16 +15530,23 @@ function setEventExtendedProp(event, key, value) {
   }
 }
 
-function createCalendar(initialEvents, height) {
+function createCalendar(initialEvents) {
   const calendarEl = document.getElementById('calendar');
   const wrapperEl = document.getElementById('calendar-wrapper');
   let calendar;
-  let currentHeight = height;
+  const slotMinTime = '03:00:00';
+  const slotMaxTime = '34:00:00';
+  const hours = getHoursInDay(slotMinTime, slotMaxTime);
+  const defaultHeight = zoomLevels[state.currZoomLevel].minHeight(hours);
+  console.log('defaultHeight', defaultHeight);
+  let currentHeight = defaultHeight;
   const calendarHeaderSize = 64.3;
 
   // FOR 3AM TO 2AM
+  // 3am to 2am is 23 hours
   // const minHeight = 5954
   // this has timePerPixel: 14108.025217243143
+  // pixelsPerHour = (5954 - 64.3) / 23 = 256.0739
 
   function getTimeAtMousePosition(mouseY) {
     const timeGridEl = calendarEl.querySelector('.fc-timegrid-slots');
@@ -15537,8 +15568,12 @@ function createCalendar(initialEvents, height) {
     const slotMaxTimeMs = parseTime(slotMaxTimeStr);
     const totalDurationMs = slotMaxTimeMs - slotMinTimeMs;
     const calendarHeight = wrapperEl.scrollHeight + calendarHeaderSize;
+    console.log('totalDurationMs', totalDurationMs);
+    console.log('calendarHeight', calendarHeight);
     const pxPerMs = calendarHeight / totalDurationMs;
     const offsetMs = msToScroll - slotMinTimeMs;
+    console.log('pxPerMs', pxPerMs);
+    console.log('offsetMs', offsetMs);
     return offsetMs * pxPerMs;
   }
   function scrollToTime(timeInput) {
@@ -15555,6 +15590,7 @@ function createCalendar(initialEvents, height) {
     console.log('wrapperEl.scrollHeight', wrapperEl.scrollHeight);
     const offsetPx = getScrollOffsetForTime(msToScroll);
     console.log('offsetPx', offsetPx);
+    console.log('wrapperEl.scrollTop', wrapperEl.scrollTop);
 
     // Scroll the wrapper
     wrapperEl.scrollTop = offsetPx;
@@ -15576,9 +15612,9 @@ function createCalendar(initialEvents, height) {
     calendar.resumeRendering();
   }
   function zoom(shouldZoomIn, mouseY) {
-    const minHeight = zoomLevels[state.currZoomLevel].minHeight;
+    const minHeight = zoomLevels[state.currZoomLevel].minHeight();
     const lastLevelZoomIndex = state.currZoomLevel - 1;
-    const lastLevelMinHeight = zoomLevels[lastLevelZoomIndex] ? zoomLevels[lastLevelZoomIndex].minHeight : zoomLevels[0].minHeight;
+    const lastLevelMinHeight = zoomLevels[lastLevelZoomIndex] ? zoomLevels[lastLevelZoomIndex].minHeight() : zoomLevels[0].minHeight();
     const mouseTimeBefore = getTimeAtMousePosition(mouseY);
 
     // const heightDelta = lastLevelMinHeight / 5 || minHeight / 5
@@ -15608,7 +15644,6 @@ function createCalendar(initialEvents, height) {
     if (mouseY !== undefined) {
       adjustWrapperScroll(mouseTimeBefore, mouseY);
     }
-    console.timeLog('zoom', 'after adjustWrapperScroll');
   }
   function selectAllEvents() {
     const allEvents = calendar.getEvents();
@@ -15714,15 +15749,39 @@ function createCalendar(initialEvents, height) {
       right: 'addEvent,selectAll zoomOut,zoomIn'
     },
     editable: true,
-    height,
+    height: defaultHeight,
     slotDuration: zoomLevels[state.currZoomLevel].slotDuration,
     slotLabelInterval: zoomLevels[state.currZoomLevel].slotLabelInterval,
-    slotMinTime: '03:00:00',
-    slotMaxTime: '26:00:00',
+    slotMinTime,
+    slotMaxTime,
     expandRows: true,
     scrollTime,
     nowIndicator: true,
     selectable: true,
+    eventContent(renderProps, createElement) {
+      const start = renderProps.event.start;
+      const end = renderProps.event.end;
+
+      // Calculate duration in hours and minutes
+      const durationInMinutes = (end - start) / (1000 * 60);
+      const hours = Math.floor(durationInMinutes / 60);
+      const minutes = durationInMinutes % 60;
+      const hoursString = hours > 0 ? `${hours}h` : '';
+      const spacer = hours > 0 && minutes > 0 ? ' ' : '';
+      const minutesString = minutes > 0 ? `${minutes}m` : '';
+      const formattedDuration = hoursString + spacer + minutesString;
+
+      // Create the custom content
+      return createElement('div', {
+        className: 'fc-event-main-frame'
+      }, [createElement('div', {
+        className: 'fc-event-time'
+      }, `${renderProps.timeText} (${formattedDuration})`), createElement('div', {
+        className: 'fc-event-title-container'
+      }, [createElement('div', {
+        className: ['fc-event-title fc-sticky']
+      }, renderProps.event.title)])]);
+    },
     select: info => {
       if (!shiftPressed) addEvent(info);
       calendar.unselect();
@@ -15779,10 +15838,9 @@ function createCalendar(initialEvents, height) {
   };
   calendar.render();
   console.debug('calendar.render() complete');
-
-  // scrollToTime(scrollTime)
-  scrollToTime('09:00:00');
-  return calendar;
+  scrollToTime(scrollTime);
+  state.scrollToTime = scrollToTime;
+  state.calendar = calendar;
 }
 
 const SAVED_HABIT_TASK_TITLE = 'Saved';
@@ -15915,7 +15973,7 @@ function clickSaveButton() {
   }
 }
 
-var _tmpl$$2 = /*#__PURE__*/web.template(`<div><div><span>Current</span><span></span></div><span>+</span><div><span>Task</span><span></span></div><span>=</span><div><span>End</span><span></span></div><span>+</span><div><span>Full</span><span></span></div><span>=</span><div><span>Full End</span><span>`);
+var _tmpl$$3 = /*#__PURE__*/web.template(`<div id=timecalc><div><span>Current</span><span></span></div><span>+</span><div><span>Task</span><span></span></div><span>=</span><div><span>End</span><span></span></div><span>+</span><div><span>Full</span><span></span></div><span>=</span><div><span>Full End</span><span>`);
 function minsToDuration(totalMinutes) {
   let hours = Math.floor(totalMinutes / 60);
   let minutes = totalMinutes % 60;
@@ -16011,7 +16069,7 @@ function TimeCalc() {
     color: colors.defaultFullMin.darken(timeDarken).string()
   };
   return (() => {
-    var _el$ = _tmpl$$2(),
+    var _el$ = _tmpl$$3(),
       _el$2 = _el$.firstChild,
       _el$3 = _el$2.firstChild,
       _el$4 = _el$3.nextSibling,
@@ -16470,14 +16528,9 @@ function getService() {
 }
 const register = (...args) => getService().register(...args);
 
-var _tmpl$$1 = /*#__PURE__*/web.template(`<div class=taskEditButtonsContainer><button>Enable</button><button>Disable</button><button>Skip`),
-  _tmpl$2$1 = /*#__PURE__*/web.template(`<button>`),
-  _tmpl$3$1 = /*#__PURE__*/web.template(`<div>`);
+var _tmpl$$2 = /*#__PURE__*/web.template(`<div class=taskEditButtonsContainer><button>Enable</button><button>Disable</button><button>Skip`),
+  _tmpl$2$2 = /*#__PURE__*/web.template(`<button>`);
 const [showEditButtons, setShowEditButtons] = solidJs.createSignal(false);
-register('ctrl-alt-e', () => {
-  console.debug('clicked ctrl-alt-e');
-  setShowEditButtons(!showEditButtons());
-});
 function setRepeatEveryValue(value) {
   dom.observe(document.body, () => {
     const optionDivs = document.querySelectorAll('.option');
@@ -16549,7 +16602,7 @@ function createTaskEditButtons() {
   for (const taskClickableArea of taskClickableAreas) {
     if (taskClickableArea.parentElement.querySelector('.taskEditButtonsContainer')) continue;
     const Container = () => (() => {
-      var _el$ = _tmpl$$1(),
+      var _el$ = _tmpl$$2(),
         _el$2 = _el$.firstChild,
         _el$3 = _el$2.nextSibling,
         _el$4 = _el$3.nextSibling;
@@ -16575,6 +16628,10 @@ function removeCreatedButtons() {
   createdButtons = [];
 }
 let showButtonsObserver;
+register('ctrl-alt-e', () => {
+  console.debug('clicked ctrl-alt-e');
+  setShowEditButtons(!showEditButtons());
+});
 const EditDailiesToggle = () => {
   solidJs.createEffect(() => {
     if (showEditButtons()) {
@@ -16591,7 +16648,7 @@ const EditDailiesToggle = () => {
     }
   });
   return (() => {
-    var _el$5 = _tmpl$2$1();
+    var _el$5 = _tmpl$2$2();
     _el$5.$$click = () => {
       setShowEditButtons(!showEditButtons());
     };
@@ -16599,28 +16656,66 @@ const EditDailiesToggle = () => {
     return _el$5;
   })();
 };
-// const SkipDailiesToggle = () => {
-// 	return (
-// 		<button
-// 			onClick={() => {
-//                 setShowSkipButtons(!showSkipButtons())
-// 				if (showSkipButtons()) {
-//                     createSkipButtons()
-//                 } else {
-// 					removeCreatedButtons()
-// 				}
-// 			}}
-// 		>
-// 			{showSkipButtons() ? 'Stop skipping dailies' : 'Skip daily'}
-// 		</button>
-// 	)
-// }
+const TaskTools = EditDailiesToggle;
+web.delegateEvents(["click"]);
 
-const TaskTools = () => (() => {
-  var _el$6 = _tmpl$3$1();
-  web.insert(_el$6, web.createComponent(EditDailiesToggle, {}));
-  return _el$6;
-})();
+var _tmpl$$1 = /*#__PURE__*/web.template(`<div>`),
+  _tmpl$2$1 = /*#__PURE__*/web.template(`<button> Highlight Tasks w/ %`);
+const [highlightTasks, setHighlightTasks] = solidJs.createSignal(false);
+const [numHighlightedTasks, setNumHighlightedTasks] = solidJs.createSignal(0);
+const panel = ui.getPanel({
+  theme: 'dark'
+  // style: [globalCss, stylesheet].join('\n'),
+});
+Object.assign(panel.wrapper.style, {
+  top: '10vh',
+  left: '10vw'
+});
+panel.setMovable(true);
+panel.hide();
+function toggleHighlightTasks(highlight) {
+  // highlight tasks with note that contains %
+  setNumHighlightedTasks(0);
+  const taskNotes = document.querySelectorAll('.task-notes');
+  taskNotes.forEach(note => {
+    if (note.textContent.includes('%')) {
+      setNumHighlightedTasks(numHighlightedTasks() + 1);
+      note.parentElement.style.backgroundColor = highlight ? 'yellow' : '';
+    }
+  });
+}
+function NumHighlightedTasksDisplay() {
+  // floating div with number of highlighted tasks
+  return (() => {
+    var _el$ = _tmpl$$1();
+    _el$.style.setProperty("padding", "1em");
+    _el$.style.setProperty("font-size", "4em");
+    _el$.style.setProperty("font-weight", "bold");
+    _el$.style.setProperty("color", "red");
+    web.insert(_el$, numHighlightedTasks);
+    return _el$;
+  })();
+}
+web.render(NumHighlightedTasksDisplay, panel.body);
+function onClickToggleHighlightTasks() {
+  setHighlightTasks(!highlightTasks());
+  toggleHighlightTasks(highlightTasks());
+  if (highlightTasks()) panel.show();else panel.hide();
+}
+register('ctrl-alt-h', () => {
+  console.debug('clicked ctrl-alt-h');
+  onClickToggleHighlightTasks();
+});
+const HighlightTasksToggle = () => {
+  return (() => {
+    var _el$2 = _tmpl$2$1(),
+      _el$3 = _el$2.firstChild;
+    _el$2.$$click = onClickToggleHighlightTasks;
+    web.insert(_el$2, () => highlightTasks() ? 'Disable' : 'Enable', _el$3);
+    return _el$2;
+  })();
+};
+const TaskHighlighter = HighlightTasksToggle;
 web.delegateEvents(["click"]);
 
 var _tmpl$ = /*#__PURE__*/web.template(`<div><h2>Calendar</h2><button>Create</button><button>Delete</button><button>Copy to Clipboard</button><button>Load from Saved</button><button></button><br><div id=calendar-wrapper><div id=calendar>`),
@@ -16630,9 +16725,8 @@ var _tmpl$ = /*#__PURE__*/web.template(`<div><h2>Calendar</h2><button>Create</bu
   _tmpl$5 = /*#__PURE__*/web.template(`<input type=time value=02:00>`),
   _tmpl$6 = /*#__PURE__*/web.template(`<button>Print Events`),
   _tmpl$7 = /*#__PURE__*/web.template(`<br>`),
-  _tmpl$8 = /*#__PURE__*/web.template(`<label>Calendar Height`),
-  _tmpl$9 = /*#__PURE__*/web.template(`<input type=number>`),
-  _tmpl$10 = /*#__PURE__*/web.template(`<div>: `);
+  _tmpl$8 = /*#__PURE__*/web.template(`<div>: `),
+  _tmpl$9 = /*#__PURE__*/web.template(`<div>`);
 const MOBILE_BREAKPOINT_WIDTH = 770;
 const [dupeEvents, setDupeEvents] = solidJs.createSignal({});
 const [showMore, setShowMore] = solidJs.createSignal(false);
@@ -16647,13 +16741,10 @@ dom.observe(document.body, () => {
   timeColumn = document.createElement('div');
   timeColumn.className = 'tasks-column col-lg-3 col-md-6 time';
   dailiesColumn.after(timeColumn);
-
-  // const calendarHeight = dailiesColumn.clientHeight
   setWrapperHeight(dailiesColumn.clientHeight);
-  let calendarHeight = 6000;
   const handleCreateCal = () => {
     const initialEvents = getEventsFromColumn(dailiesColumn);
-    state.calendar = createCalendar(initialEvents, calendarHeight);
+    createCalendar(initialEvents);
   };
   const handleDeleteCal = () => {
     var _state$calendar;
@@ -16672,7 +16763,7 @@ dom.observe(document.body, () => {
   const handleLoadCal = () => {
     const savedEvents = getEventsFromSavedHabitNote(habitColumn);
     console.debug(savedEvents);
-    state.calendar = createCalendar(savedEvents, calendarHeight);
+    createCalendar(savedEvents);
   };
   const printEvents = () => {
     for (const event of state.calendar.getEvents()) {
@@ -16690,11 +16781,6 @@ dom.observe(document.body, () => {
     const plus24hours = parseInt(input.value.split(':')[0]) + 24;
     input.value = plus24hours.toString().padStart(2, '0') + ':' + input.value.split(':')[1];
     (_state$calendar3 = state.calendar) == null || _state$calendar3.setOption('slotMaxTime', input.value + ':00');
-  }
-  function setCalendarHeight(height) {
-    var _state$calendar4;
-    calendarHeight = height;
-    (_state$calendar4 = state.calendar) == null || _state$calendar4.setOption('height', height);
   }
   const Wrapper = () => {
     let wrapperEl;
@@ -16728,17 +16814,12 @@ dom.observe(document.body, () => {
           var _el$14 = _tmpl$6();
           _el$14.$$click = printEvents;
           return _el$14;
-        })(), _tmpl$7(), _tmpl$8(), (() => {
-          var _el$17 = _tmpl$9();
-          _el$17.$$input = e => setCalendarHeight(parseInt(e.target.value));
-          _el$17.value = calendarHeight;
-          return _el$17;
         })(), _tmpl$7(), web.memo(() => Object.entries(dupeEvents()).map(([eventName, duration]) => (() => {
-          var _el$19 = _tmpl$10(),
-            _el$20 = _el$19.firstChild;
-          web.insert(_el$19, eventName, _el$20);
-          web.insert(_el$19, () => msToHHMM(duration), null);
-          return _el$19;
+          var _el$16 = _tmpl$8(),
+            _el$17 = _el$16.firstChild;
+          web.insert(_el$16, eventName, _el$17);
+          web.insert(_el$16, () => msToHHMM(duration), null);
+          return _el$16;
         })()))];
       })(), _el$9);
       var _ref$ = wrapperEl;
@@ -16752,8 +16833,7 @@ dom.observe(document.body, () => {
   console.log('wrapperEl');
   const savedEvents = JSON.parse(localStorage.getItem('events') || '[]');
   if (savedEvents.length > 0) {
-    state.calendar = createCalendar(savedEvents, calendarHeight);
-    // state.calendar = createCalendar(savedEvents, 5000)
+    createCalendar(savedEvents);
   }
   return true;
 });
@@ -16771,8 +16851,32 @@ dom.observe(document.body, () => {
 dom.observe(document.body, () => {
   const dailiesColumn = document.querySelector('.tasks-column.daily');
   if (!dailiesColumn) return false;
-  dailiesColumn.appendChild(TaskTools());
+  web.render(() => (() => {
+    var _el$18 = _tmpl$9();
+    web.insert(_el$18, web.createComponent(TaskTools, {}), null);
+    web.insert(_el$18, web.createComponent(TaskHighlighter, {}), null);
+    return _el$18;
+  })(), dailiesColumn);
   return true;
+});
+register('ctrl-space', () => {
+  console.debug('pressed ctrl-space');
+  // scroll window to top of timecalc
+  const timeCalc = document.querySelector('#timecalc');
+  if (timeCalc) timeCalc.scrollIntoView({
+    behavior: 'smooth'
+  });else console.error('timeCalc not found');
+  const now = getRoundedNow(5);
+  const scrollTime = getMinutesAgoString(now, 30, false);
+  state.scrollToTime(scrollTime);
+  Notification.requestPermission().then(result => {
+    console.log(result);
+  });
+
+  // const text = `HEY! Your task is now overdue.`
+  // const notification = new Notification('To do list', { body: text })
+
+  // playNotification()
 });
 dom.observe(document.body, () => {
   // hide habits column if screen is small
@@ -16819,25 +16923,9 @@ dom.observe(document.body, () => {
         }));
       }
     }
-
-    // Set calendar height
-    // const sortableTasks = dailiesColumn.querySelector('.sortable-tasks')
-    // const calendarEl = document.querySelector('#calendar') as HTMLElement
-    // if (calendarEl) {
-    // 	const currentHeight = state.calendar.getOption('height')
-
-    // 	let idealHeight = window.innerHeight * 0.9
-    // 	if (window.innerWidth > MOBILE_BREAKPOINT_WIDTH) {
-    // 		idealHeight = Math.max(sortableTasks.clientHeight, idealHeight)
-    // 	}
-
-    // 	if (currentHeight !== idealHeight) {
-    // 		state.calendar.setOption('height', idealHeight)
-    // 	}
-    // }
     const sortableTasks = dailiesColumn.querySelector('.sortable-tasks');
     const calendarEl = document.querySelector('#calendar');
-    if (calendarEl) {
+    if (calendarEl && sortableTasks) {
       let idealHeight = window.innerHeight * 0.9;
       if (window.innerWidth > MOBILE_BREAKPOINT_WIDTH) {
         idealHeight = Math.max(sortableTasks.clientHeight, idealHeight);
@@ -16861,8 +16949,6 @@ dom.observe(document.body, () => {
     }
   }
 
-  // TODO: highlight dailies with % in notes
-
   // TODO: track dailies finishes
 
   // TODO: right click menu
@@ -16882,4 +16968,4 @@ dom.observe(document.body, () => {
 });
 web.delegateEvents(["click", "input"]);
 
-})(VM.solid.web, VM, VM.solid);
+})(VM.solid.web, VM, VM.solid, VM);

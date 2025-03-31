@@ -100,7 +100,7 @@ export function TimeCalc() {
 	const newFullTimeColor = { color: colors.defaultFullMin.darken(timeDarken).string() }
 
 	return (
-		<div style={outerStyle}>
+		<div style={outerStyle} id="timecalc">
 			<div style={boxStyle}>
 				<span style={{ ...labelStyle, ...currentColor }}>Current</span>
 				<span style={{ ...numberStyle, ...currentColor }}>{currentTime()}</span>
