@@ -81,9 +81,12 @@ let createdButtons: HTMLElement[] = []
 
 function createTaskEditButtons() {
 	const dailiesColumn = document.querySelector('.tasks-column.daily')
-	const taskClickableAreas = dailiesColumn.querySelectorAll('.task-clickable-area')
-	for (const taskClickableArea of taskClickableAreas as NodeListOf<HTMLElement>) {
-		if (taskClickableArea.parentElement.querySelector('.taskEditButtonsContainer')) continue
+	const taskContents = dailiesColumn.querySelectorAll('.task-content')
+	for (const taskContent of taskContents as NodeListOf<HTMLElement>) {
+		if (taskContent.parentElement.querySelector('.taskEditButtonsContainer')) continue
+
+		const taskClickableArea = taskContent.querySelector('.task-clickable-area')
+		if (!taskClickableArea) continue
 
 		const Container = () => (
 			<div class="taskEditButtonsContainer">
@@ -112,7 +115,7 @@ function createTaskEditButtons() {
 		)
 		const containerElement = document.createElement('div')
 		render(() => <Container />, containerElement)
-		taskClickableArea.insertAdjacentElement('afterend', containerElement)
+		taskContent.insertAdjacentElement('afterend', containerElement)
 		createdButtons.push(containerElement)
 	}
 }

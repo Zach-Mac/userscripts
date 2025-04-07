@@ -16598,9 +16598,11 @@ function skipTask(taskClickableArea) {
 let createdButtons = [];
 function createTaskEditButtons() {
   const dailiesColumn = document.querySelector('.tasks-column.daily');
-  const taskClickableAreas = dailiesColumn.querySelectorAll('.task-clickable-area');
-  for (const taskClickableArea of taskClickableAreas) {
-    if (taskClickableArea.parentElement.querySelector('.taskEditButtonsContainer')) continue;
+  const taskContents = dailiesColumn.querySelectorAll('.task-content');
+  for (const taskContent of taskContents) {
+    if (taskContent.parentElement.querySelector('.taskEditButtonsContainer')) continue;
+    const taskClickableArea = taskContent.querySelector('.task-clickable-area');
+    if (!taskClickableArea) continue;
     const Container = () => (() => {
       var _el$ = _tmpl$$2(),
         _el$2 = _el$.firstChild,
@@ -16619,7 +16621,7 @@ function createTaskEditButtons() {
     })();
     const containerElement = document.createElement('div');
     web.render(() => web.createComponent(Container, {}), containerElement);
-    taskClickableArea.insertAdjacentElement('afterend', containerElement);
+    taskContent.insertAdjacentElement('afterend', containerElement);
     createdButtons.push(containerElement);
   }
 }
