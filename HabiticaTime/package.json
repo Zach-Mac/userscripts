@@ -1,6 +1,6 @@
 {
 	"name": "habiticatime",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "",
 	"author": "Zach-Mac",
 	"license": "MIT",
@@ -11,6 +11,7 @@
 	"scripts": {
 		"prepare": "husky",
 		"dev": "rollup -wc",
+		"open": "firefox --new-window $(realpath ./dist/awesome-script.user.js)",
 		"clean": "del-cli dist",
 		"lint": "eslint --ext .ts,.tsx . && prettier --ignore-path .eslintignore --check .",
 		"lint:fix": "eslint --ext .ts,.tsx --fix . && prettier --ignore-path .eslintignore --write .",

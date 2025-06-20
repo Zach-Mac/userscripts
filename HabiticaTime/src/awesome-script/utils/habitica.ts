@@ -6,6 +6,13 @@ import { colors } from '../global'
 
 const SAVED_HABIT_TASK_TITLE = 'Saved'
 
+interface TaskTimeData {
+	minutes: number
+	fullMinutes: number
+	preferredTime: string
+	preferredTimeOffset: number
+}
+
 function getTaskColor(task: Element) {
 	const leftControl = task.querySelector('.left-control') as HTMLElement
 	const style = window.getComputedStyle(leftControl)
@@ -19,21 +26,43 @@ function getTaskNotes(task: Element) {
 	const taskNotes = task.querySelector('.task-notes')
 	return taskNotes.textContent.trim()
 }
-function getTaskMinutes(task: Element): number {
+function getTaskTimeData(task: Element): TaskTimeData {
 	const taskNotes = task.querySelector('.task-notes')
 	const noteText = taskNotes.textContent
 
-	let minMatch = noteText.match(/^(\d+)m/)
+	const minMatch = noteText.match(/^(\d+)m/)
+	const fullMatch = noteText.match(/^(\d+)fm/)
+	const preferredTimeMatch = noteText.match(/pt=([0-9:apm]+)/i)
+	const preferredTimeOffsetMatch = noteText.match(/pto=([+-]?\d+)m/i)
+	let preferredTime = ''
+	if (preferredTimeMatch) {
+		preferredTime = preferredTimeMatch[1]
+		// if it contains am or pm, ad a space before it
+		if (preferredTime.match(/am|pm/i)) {
+			preferredTime = preferredTime.replace(/(am|pm)/i, ' $1')
+		}
+	}
 
-	if (minMatch) return parseInt(minMatch[1])
+	if (preferredTime && preferredTimeOffsetMatch) {
+		// Alert user with details of task
+		alert(
+			`Error: Task "${getTaskTitle(task)}" has both a preferred time of "${preferredTime}" and an offset of ${preferredTimeOffsetMatch[1]} minutes. Task can either have a preferred time or an offset, not both.`
+		)
+		preferredTime = ''
+	}
 
-	return 0
+	return {
+		minutes: minMatch ? parseInt(minMatch[1]) : 0,
+		fullMinutes: fullMatch ? parseInt(fullMatch[1]) : 0,
+		preferredTime: preferredTime,
+		preferredTimeOffset: preferredTimeOffsetMatch ? parseInt(preferredTimeOffsetMatch[1]) : 0
+	}
 }
 function getTaskFullMinutes(task: Element): number {
 	const taskNotes = task.querySelector('.task-notes')
 	const noteText = taskNotes.textContent
 
-	let fullMatch = noteText.match(/^(\d+)fm/)
+	const fullMatch = noteText.match(/^(\d+)fm/)
 
 	if (fullMatch) return parseInt(fullMatch[1])
 
@@ -95,31 +124,44 @@ export function getEventsFromColumn(column: Element): EventInput[] {
 	const events = [] as EventInput[]
 	const taskWrapper = column.querySelectorAll('.task-wrapper')
 
-	// Sum task minutes
-	let totalMinutes = 0
-	let totalFullMinutes = 0
-
 	let startTime = getRoundedNow(5)
 
 	for (const task of taskWrapper) {
 		const titleText = getTaskTitle(task)
 		const taskColor = getTaskColor(task)
 
-		const taskMinutes = getTaskMinutes(task)
-		const taskFullMinutes = getTaskFullMinutes(task)
+		const taskTimeData = getTaskTimeData(task)
 
-		const eventColor = getEventColor(taskColor, taskFullMinutes)
+		const eventColor = getEventColor(taskColor, taskTimeData.fullMinutes)
 
-		if (!taskMinutes && !taskFullMinutes) continue
+		if (!taskTimeData.minutes && !taskTimeData.fullMinutes) continue
 
-		console.log(titleText, taskMinutes, taskFullMinutes)
+		console.debug(
+			titleText,
+			taskTimeData.minutes,
+			taskTimeData.fullMinutes,
+			taskTimeData.preferredTime
+		)
 
 		const start = new Date(startTime.getTime())
-		start.setMinutes(start.getMinutes())
+		// start.setMinutes(start.getMinutes())
+		if (taskTimeData.preferredTime) {
+			const preferredTime = new Date(
+				startTime.toLocaleDateString() + ' ' + taskTimeData.preferredTime
+			)
+			console.log('preferredTime', preferredTime)
+			console.log('startbefore', start, start.getMinutes())
+			console.log('preferredTime.getMinutes()', preferredTime.setTime)
+			start.setTime(preferredTime.getTime())
+			console.log('startafter', start)
+		}
+		if (taskTimeData.preferredTimeOffset) {
+			start.setMinutes(start.getMinutes() + taskTimeData.preferredTimeOffset)
+		}
 
-		const durationOver5m = taskMinutes >= 5 || taskFullMinutes >= 5
+		const durationOver5m = taskTimeData.minutes >= 5 || taskTimeData.fullMinutes >= 5
 
-		console.log(
+		console.debug(
 			'start',
 			start,
 			'durationOver5m',
@@ -136,12 +178,12 @@ export function getEventsFromColumn(column: Element): EventInput[] {
 		}
 
 		const end = new Date(start.getTime())
-		end.setMinutes(end.getMinutes() + taskMinutes + taskFullMinutes)
+		end.setMinutes(end.getMinutes() + taskTimeData.minutes + taskTimeData.fullMinutes)
 
 		startTime = new Date(end.getTime())
 
-		totalMinutes += taskMinutes
-		totalFullMinutes += taskFullMinutes
+		// totalMinutes += taskTimeData.minutes
+		// totalFullMinutes += taskTimeData.fullMinutes
 
 		const newEvent = createEvent({
 			title: titleText,

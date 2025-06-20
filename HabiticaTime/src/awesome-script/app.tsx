@@ -267,13 +267,19 @@ observe(document.body, () => {
 		}
 	}
 
+	// Set overflow for inner calendar fc-scroller
+	const fcScroller = document.querySelector(
+		'.fc-scroller.fc-scroller-liquid-absolute'
+	) as HTMLElement
+	if (fcScroller) {
+		fcScroller.style.overflow = 'hidden'
+	}
+
 	// TODO: track dailies finishes
 
 	// TODO: right click menu
 
 	// TODO: ctrl click to multi select
-
-	// BUG: sometimes certain events not selectable??
 
 	// BUG: zoom in/out keyboard shortcuts don't work well. focus seems to only be on calendar button click
 

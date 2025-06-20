@@ -15857,17 +15857,37 @@ function getTaskNotes(task) {
   const taskNotes = task.querySelector('.task-notes');
   return taskNotes.textContent.trim();
 }
-function getTaskMinutes(task) {
+function getTaskTimeData(task) {
   const taskNotes = task.querySelector('.task-notes');
   const noteText = taskNotes.textContent;
-  let minMatch = noteText.match(/^(\d+)m/);
-  if (minMatch) return parseInt(minMatch[1]);
-  return 0;
+  const minMatch = noteText.match(/^(\d+)m/);
+  const fullMatch = noteText.match(/^(\d+)fm/);
+  const preferredTimeMatch = noteText.match(/pt=([0-9:apm]+)/i);
+  const preferredTimeOffsetMatch = noteText.match(/pto=([+-]?\d+)m/i);
+  let preferredTime = '';
+  if (preferredTimeMatch) {
+    preferredTime = preferredTimeMatch[1];
+    // if it contains am or pm, ad a space before it
+    if (preferredTime.match(/am|pm/i)) {
+      preferredTime = preferredTime.replace(/(am|pm)/i, ' $1');
+    }
+  }
+  if (preferredTime && preferredTimeOffsetMatch) {
+    // Alert user with details of task
+    alert(`Error: Task "${getTaskTitle(task)}" has both a preferred time of "${preferredTime}" and an offset of ${preferredTimeOffsetMatch[1]} minutes. Task can either have a preferred time or an offset, not both.`);
+    preferredTime = '';
+  }
+  return {
+    minutes: minMatch ? parseInt(minMatch[1]) : 0,
+    fullMinutes: fullMatch ? parseInt(fullMatch[1]) : 0,
+    preferredTime: preferredTime,
+    preferredTimeOffset: preferredTimeOffsetMatch ? parseInt(preferredTimeOffsetMatch[1]) : 0
+  };
 }
 function getTaskFullMinutes(task) {
   const taskNotes = task.querySelector('.task-notes');
   const noteText = taskNotes.textContent;
-  let fullMatch = noteText.match(/^(\d+)fm/);
+  const fullMatch = noteText.match(/^(\d+)fm/);
   if (fullMatch) return parseInt(fullMatch[1]);
   return 0;
 }
@@ -15917,23 +15937,37 @@ function getEventsFromColumn(column) {
   for (const task of taskWrapper) {
     const titleText = getTaskTitle(task);
     const taskColor = getTaskColor(task);
-    const taskMinutes = getTaskMinutes(task);
-    const taskFullMinutes = getTaskFullMinutes(task);
-    const eventColor = getEventColor(taskColor, taskFullMinutes);
-    if (!taskMinutes && !taskFullMinutes) continue;
-    console.log(titleText, taskMinutes, taskFullMinutes);
+    const taskTimeData = getTaskTimeData(task);
+    const eventColor = getEventColor(taskColor, taskTimeData.fullMinutes);
+    if (!taskTimeData.minutes && !taskTimeData.fullMinutes) continue;
+    console.debug(titleText, taskTimeData.minutes, taskTimeData.fullMinutes, taskTimeData.preferredTime);
     const start = new Date(startTime.getTime());
-    start.setMinutes(start.getMinutes());
-    const durationOver5m = taskMinutes >= 5 || taskFullMinutes >= 5;
-    console.log('start', start, 'durationOver5m', durationOver5m, 'start.getMinutes()', start.getMinutes(), 'start.getMinutes() % 5', start.getMinutes() % 5);
+    // start.setMinutes(start.getMinutes())
+    if (taskTimeData.preferredTime) {
+      const preferredTime = new Date(startTime.toLocaleDateString() + ' ' + taskTimeData.preferredTime);
+      console.log('preferredTime', preferredTime);
+      console.log('startbefore', start, start.getMinutes());
+      console.log('preferredTime.getMinutes()', preferredTime.setTime);
+      start.setTime(preferredTime.getTime());
+      console.log('startafter', start);
+    }
+    if (taskTimeData.preferredTimeOffset) {
+      start.setMinutes(start.getMinutes() + taskTimeData.preferredTimeOffset);
+    }
+    const durationOver5m = taskTimeData.minutes >= 5 || taskTimeData.fullMinutes >= 5;
+    console.debug('start', start, 'durationOver5m', durationOver5m, 'start.getMinutes()', start.getMinutes(), 'start.getMinutes() % 5', start.getMinutes() % 5);
 
     // if start minutes is not divisible by 5, round it up
     if (durationOver5m && start.getMinutes() % 5 !== 0) {
       start.setMinutes(start.getMinutes() + 5 - start.getMinutes() % 5);
     }
     const end = new Date(start.getTime());
-    end.setMinutes(end.getMinutes() + taskMinutes + taskFullMinutes);
+    end.setMinutes(end.getMinutes() + taskTimeData.minutes + taskTimeData.fullMinutes);
     startTime = new Date(end.getTime());
+
+    // totalMinutes += taskTimeData.minutes
+    // totalFullMinutes += taskTimeData.fullMinutes
+
     const newEvent = createEvent({
       title: titleText,
       start,
@@ -16951,13 +16985,17 @@ dom.observe(document.body, () => {
     }
   }
 
+  // Set overflow for inner calendar fc-scroller
+  const fcScroller = document.querySelector('.fc-scroller.fc-scroller-liquid-absolute');
+  if (fcScroller) {
+    fcScroller.style.overflow = 'hidden';
+  }
+
   // TODO: track dailies finishes
 
   // TODO: right click menu
 
   // TODO: ctrl click to multi select
-
-  // BUG: sometimes certain events not selectable??
 
   // BUG: zoom in/out keyboard shortcuts don't work well. focus seems to only be on calendar button click
 
