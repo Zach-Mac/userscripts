@@ -3,15 +3,15 @@ import { colors } from './global'
 import { observe } from '@violentmonkey/dom'
 
 function minsToDuration(totalMinutes: number) {
-	let hours = Math.floor(totalMinutes / 60)
-	let minutes = totalMinutes % 60
+	const hours = Math.floor(totalMinutes / 60)
+	const minutes = totalMinutes % 60
 	const maybeZero = minutes < 10 ? '0' : ''
 	return `${hours}h${maybeZero}${minutes}m`
 }
 
 function minsToHHMMSS(totalMinutes: number) {
 	let hours = Math.floor(totalMinutes / 60)
-	let minutes = totalMinutes % 60
+	const minutes = totalMinutes % 60
 	const ampm = hours >= 12 ? 'PM' : 'AM'
 	hours = hours % 12 || 12
 	const maybeZero = minutes < 10 ? '0' : ''

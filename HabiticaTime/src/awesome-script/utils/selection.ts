@@ -22,7 +22,7 @@ export function selectEvents(events: EventApi[]) {
 		event.setProp('groupId', 'selected')
 	}
 }
-function deselectEvents(events: EventApi[]) {
+export function deselectEvents(events: EventApi[]) {
 	for (const event of events) {
 		const originalColor = event.extendedProps.original.backgroundColor
 		// Have to remove groupId FIRST

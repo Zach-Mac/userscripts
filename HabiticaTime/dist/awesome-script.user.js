@@ -16009,14 +16009,14 @@ function clickSaveButton() {
 
 var _tmpl$$3 = /*#__PURE__*/web.template(`<div id=timecalc><div><span>Current</span><span></span></div><span>+</span><div><span>Task</span><span></span></div><span>=</span><div><span>End</span><span></span></div><span>+</span><div><span>Full</span><span></span></div><span>=</span><div><span>Full End</span><span>`);
 function minsToDuration(totalMinutes) {
-  let hours = Math.floor(totalMinutes / 60);
-  let minutes = totalMinutes % 60;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
   const maybeZero = minutes < 10 ? '0' : '';
   return `${hours}h${maybeZero}${minutes}m`;
 }
 function minsToHHMMSS(totalMinutes) {
   let hours = Math.floor(totalMinutes / 60);
-  let minutes = totalMinutes % 60;
+  const minutes = totalMinutes % 60;
   const ampm = hours >= 12 ? 'PM' : 'AM';
   hours = hours % 12 || 12;
   const maybeZero = minutes < 10 ? '0' : '';
@@ -16754,7 +16754,99 @@ const HighlightTasksToggle = () => {
 const TaskHighlighter = HighlightTasksToggle;
 web.delegateEvents(["click"]);
 
-var _tmpl$ = /*#__PURE__*/web.template(`<div><h2>Calendar</h2><button>Create</button><button>Delete</button><button>Copy to Clipboard</button><button>Load from Saved</button><button></button><br><div id=calendar-wrapper><div id=calendar>`),
+function isFinished(event) {
+  var _event$extendedProps$;
+  const finishedColor = colors.finishedEvent.hsl().string();
+  if (event.backgroundColor === finishedColor) return true;
+  if (((_event$extendedProps$ = event.extendedProps.original) == null ? void 0 : _event$extendedProps$.backgroundColor) === finishedColor) return true;
+  return false;
+}
+function buildClusters(sortedEvents) {
+  if (sortedEvents.length === 0) return [];
+  const clusters = [[sortedEvents[0]]];
+  let clusterMaxEnd = sortedEvents[0].end.getTime();
+  for (let i = 1; i < sortedEvents.length; i++) {
+    const event = sortedEvents[i];
+    if (event.start.getTime() < clusterMaxEnd) {
+      clusters[clusters.length - 1].push(event);
+    } else {
+      clusters.push([event]);
+    }
+    clusterMaxEnd = Math.max(clusterMaxEnd, event.end.getTime());
+  }
+  return clusters;
+}
+function getClusterStart(cluster) {
+  return Math.min(...cluster.map(e => e.start.getTime()));
+}
+function getClusterEnd(cluster) {
+  return Math.max(...cluster.map(e => e.end.getTime()));
+}
+function roundUpTo5(date) {
+  const ms = date.getTime();
+  const fiveMin = 5 * 60 * 1000;
+  const rounded = Math.ceil(ms / fiveMin) * fiveMin;
+  return new Date(rounded);
+}
+function clusterHasLongEvent(cluster) {
+  return cluster.some(e => e.end.getTime() - e.start.getTime() >= 5 * 60 * 1000);
+}
+function shiftCluster(cluster, newStart) {
+  const oldStart = getClusterStart(cluster);
+  const offset = newStart.getTime() - oldStart;
+  for (const event of cluster) {
+    const newEventStart = new Date(event.start.getTime() + offset);
+    const newEventEnd = new Date(event.end.getTime() + offset);
+    event.setDates(newEventStart, newEventEnd);
+  }
+}
+function rescheduleEvents(calendar) {
+  const now = getRoundedNow(5);
+  const nowMs = now.getTime();
+  const allEvents = calendar.getEvents();
+
+  // Deselect all selected events first
+  const selected = allEvents.filter(e => e.extendedProps.selected);
+  if (selected.length > 0) deselectEvents(selected);
+  const unfinished = allEvents.filter(e => !isFinished(e)).sort((a, b) => a.start.getTime() - b.start.getTime());
+
+  // Build clusters from ALL unfinished events so overlapping events stay together
+  const allClusters = buildClusters(unfinished);
+
+  // A cluster needs moving if any event in it starts before now
+  const hasPastEvent = cluster => cluster.some(e => e.start.getTime() < nowMs);
+  if (!allClusters.some(hasPastEvent)) return;
+  calendar.pauseRendering();
+  let placementTime = new Date(nowMs);
+  let runningEnd = nowMs;
+  for (const cluster of allClusters) {
+    if (hasPastEvent(cluster)) {
+      // Move this cluster to placementTime
+      if (clusterHasLongEvent(cluster)) {
+        placementTime = roundUpTo5(placementTime);
+      }
+      shiftCluster(cluster, placementTime);
+      placementTime = new Date(getClusterEnd(cluster));
+      runningEnd = placementTime.getTime();
+    } else {
+      // Future cluster — only push if it overlaps with runningEnd
+      const clusterStart = getClusterStart(cluster);
+      if (clusterStart < runningEnd) {
+        let newStart = new Date(runningEnd);
+        if (clusterHasLongEvent(cluster)) {
+          newStart = roundUpTo5(newStart);
+        }
+        shiftCluster(cluster, newStart);
+        runningEnd = getClusterEnd(cluster);
+      } else {
+        runningEnd = Math.max(runningEnd, getClusterEnd(cluster));
+      }
+    }
+  }
+  calendar.resumeRendering();
+}
+
+var _tmpl$ = /*#__PURE__*/web.template(`<div><h2>Calendar</h2><button>Create</button><button>Delete</button><button>Copy</button><button>Load Saved</button><button>Catchup</button><button></button><br><div id=calendar-wrapper><div id=calendar>`),
   _tmpl$2 = /*#__PURE__*/web.template(`<label>Min Time`),
   _tmpl$3 = /*#__PURE__*/web.template(`<input type=time value=03:00>`),
   _tmpl$4 = /*#__PURE__*/web.template(`<label>Max Time`),
@@ -16806,6 +16898,11 @@ dom.observe(document.body, () => {
       console.log('event', event.title, event);
     }
   };
+  const handleCatchup = () => {
+    if (!state.calendar) return;
+    rescheduleEvents(state.calendar);
+    state.scrollToTime == null || state.scrollToTime(getMinutesAgoString(getRoundedNow(5), 30, false));
+  };
   function handleMinTimeChange(e) {
     var _state$calendar2;
     const input = e.target;
@@ -16829,39 +16926,41 @@ dom.observe(document.body, () => {
         _el$6 = _el$5.nextSibling,
         _el$7 = _el$6.nextSibling,
         _el$8 = _el$7.nextSibling,
-        _el$9 = _el$8.nextSibling;
+        _el$9 = _el$8.nextSibling,
+        _el$10 = _el$9.nextSibling;
       _el$3.$$click = handleCreateCal;
       _el$4.$$click = handleDeleteCal;
       _el$5.$$click = handleSaveCal;
       _el$6.$$click = handleLoadCal;
-      _el$7.$$click = () => setShowMore(!showMore());
-      web.insert(_el$7, () => showMore() ? 'Hide More' : 'Show More');
+      _el$7.$$click = handleCatchup;
+      _el$8.$$click = () => setShowMore(!showMore());
+      web.insert(_el$8, () => showMore() ? 'Hide More' : 'Show More');
       web.insert(_el$, (() => {
         var _c$ = web.memo(() => !!showMore());
         return () => _c$() && [_tmpl$2(), (() => {
-          var _el$11 = _tmpl$3();
-          _el$11.$$input = handleMinTimeChange;
-          return _el$11;
+          var _el$12 = _tmpl$3();
+          _el$12.$$input = handleMinTimeChange;
+          return _el$12;
         })(), _tmpl$4(), (() => {
-          var _el$13 = _tmpl$5();
-          _el$13.$$input = handleMaxTimeChange;
-          return _el$13;
-        })(), (() => {
-          var _el$14 = _tmpl$6();
-          _el$14.$$click = printEvents;
+          var _el$14 = _tmpl$5();
+          _el$14.$$input = handleMaxTimeChange;
           return _el$14;
+        })(), (() => {
+          var _el$15 = _tmpl$6();
+          _el$15.$$click = printEvents;
+          return _el$15;
         })(), _tmpl$7(), web.memo(() => Object.entries(dupeEvents()).map(([eventName, duration]) => (() => {
-          var _el$16 = _tmpl$8(),
-            _el$17 = _el$16.firstChild;
-          web.insert(_el$16, eventName, _el$17);
-          web.insert(_el$16, () => msToHHMM(duration), null);
-          return _el$16;
+          var _el$17 = _tmpl$8(),
+            _el$18 = _el$17.firstChild;
+          web.insert(_el$17, eventName, _el$18);
+          web.insert(_el$17, () => msToHHMM(duration), null);
+          return _el$17;
         })()))];
-      })(), _el$9);
+      })(), _el$10);
       var _ref$ = wrapperEl;
-      typeof _ref$ === "function" ? web.use(_ref$, _el$9) : wrapperEl = _el$9;
-      _el$9.style.setProperty("overflow", "auto");
-      web.effect(_$p => (_$p = wrapperHeight() + 'px') != null ? _el$9.style.setProperty("height", _$p) : _el$9.style.removeProperty("height"));
+      typeof _ref$ === "function" ? web.use(_ref$, _el$10) : wrapperEl = _el$10;
+      _el$10.style.setProperty("overflow", "auto");
+      web.effect(_$p => (_$p = wrapperHeight() + 'px') != null ? _el$10.style.setProperty("height", _$p) : _el$10.style.removeProperty("height"));
       return _el$;
     })();
   };
@@ -16888,10 +16987,10 @@ dom.observe(document.body, () => {
   const dailiesColumn = document.querySelector('.tasks-column.daily');
   if (!dailiesColumn) return false;
   web.render(() => (() => {
-    var _el$18 = _tmpl$9();
-    web.insert(_el$18, web.createComponent(TaskTools, {}), null);
-    web.insert(_el$18, web.createComponent(TaskHighlighter, {}), null);
-    return _el$18;
+    var _el$19 = _tmpl$9();
+    web.insert(_el$19, web.createComponent(TaskTools, {}), null);
+    web.insert(_el$19, web.createComponent(TaskHighlighter, {}), null);
+    return _el$19;
   })(), dailiesColumn);
   return true;
 });
