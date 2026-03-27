@@ -16,13 +16,16 @@ import { TaskTools } from './taskTools.jsx'
 import { TaskHighlighter } from './taskHighlighter.jsx'
 import { EventInput } from '@fullcalendar/core'
 import { register } from '@violentmonkey/shortcut'
-import { rescheduleEvents } from './utils/reschedule.js'
+import { rescheduleEvents, FinishedMode } from './utils/reschedule.js'
 
 const MOBILE_BREAKPOINT_WIDTH = 770
 
 const [dupeEvents, setDupeEvents] = createSignal<Record<string, number>>({})
 const [showMore, setShowMore] = createSignal(false)
 const [wrapperHeight, setWrapperHeight] = createSignal(0)
+const [finishedMode, setFinishedMode] = createSignal<FinishedMode>(
+    (localStorage.getItem('finishedMode') as FinishedMode) || 'move'
+)
 
 function playSound(url) {
     const audio = new Audio(url)
@@ -78,7 +81,7 @@ const initCalendar = observe(document.body, () => {
     }
     const handleCatchup = () => {
         if (!state.calendar) return
-        rescheduleEvents(state.calendar)
+        rescheduleEvents(state.calendar, finishedMode())
         state.scrollToTime?.(getMinutesAgoString(getRoundedNow(5), 30, false))
     }
 
@@ -115,6 +118,22 @@ const initCalendar = observe(document.body, () => {
                         <label>Max Time</label>
                         <input type="time" value="02:00" onInput={handleMaxTimeChange} />
                         <button onClick={printEvents}>Print Events</button>
+                        <br />
+                        <label>
+                            Finished events:{' '}
+                            <select
+                                value={finishedMode()}
+                                onChange={(e) => {
+                                    const val = e.currentTarget.value as FinishedMode
+                                    setFinishedMode(val)
+                                    localStorage.setItem('finishedMode', val)
+                                }}
+                            >
+                                <option value="none">Don't move</option>
+                                <option value="move">Move</option>
+                                <option value="cascade">Move + cascade</option>
+                            </select>
+                        </label>
                         <br />
 
                         {/* display dupeEvents */}
@@ -176,6 +195,12 @@ const initTaskTools = observe(document.body, () => {
     )
 
     return true
+})
+
+register('ctrl-shift-space', () => {
+    if (!state.calendar) return
+    rescheduleEvents(state.calendar, finishedMode())
+    state.scrollToTime?.(getMinutesAgoString(getRoundedNow(5), 30, false))
 })
 
 register('ctrl-space', () => {

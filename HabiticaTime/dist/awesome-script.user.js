@@ -15822,9 +15822,12 @@ function createCalendar(initialEvents) {
   addSelectionStyles();
   const cleanupSelectionHandlers = setupSelectionHandlers(calendarEl, calendar);
   // Override the destroy method to include cleanup
+  const resizeObserver = new ResizeObserver(() => calendar.updateSize());
+  resizeObserver.observe(wrapperEl);
   const originalDestroy = calendar.destroy.bind(calendar);
   calendar.destroy = () => {
     console.debug('destroying calendar');
+    resizeObserver.disconnect();
     // Call the cleanup function
     cleanupSelectionHandlers();
     // Call the original destroy method
@@ -16788,6 +16791,12 @@ function roundUpTo5(date) {
   const rounded = Math.ceil(ms / fiveMin) * fiveMin;
   return new Date(rounded);
 }
+function roundDownTo5(date) {
+  const ms = date.getTime();
+  const fiveMin = 5 * 60 * 1000;
+  const rounded = Math.floor(ms / fiveMin) * fiveMin;
+  return new Date(rounded);
+}
 function clusterHasLongEvent(cluster) {
   return cluster.some(e => e.end.getTime() - e.start.getTime() >= 5 * 60 * 1000);
 }
@@ -16800,7 +16809,7 @@ function shiftCluster(cluster, newStart) {
     event.setDates(newEventStart, newEventEnd);
   }
 }
-function rescheduleEvents(calendar) {
+function rescheduleEvents(calendar, finishedMode = 'move') {
   const now = getRoundedNow(5);
   const nowMs = now.getTime();
   const allEvents = calendar.getEvents();
@@ -16808,38 +16817,86 @@ function rescheduleEvents(calendar) {
   // Deselect all selected events first
   const selected = allEvents.filter(e => e.extendedProps.selected);
   if (selected.length > 0) deselectEvents(selected);
+
+  // Separate into finished and unfinished
+  const finished = allEvents.filter(e => isFinished(e)).sort((a, b) => a.start.getTime() - b.start.getTime());
   const unfinished = allEvents.filter(e => !isFinished(e)).sort((a, b) => a.start.getTime() - b.start.getTime());
+  const finishedAfterNow = finished.filter(e => e.end.getTime() > nowMs);
+  const finishedBeforeNow = finished.filter(e => e.end.getTime() <= nowMs);
+  const shouldMoveFinished = finishedMode !== 'none';
+  const hasFinishedAfterNow = shouldMoveFinished && finishedAfterNow.length > 0;
 
   // Build clusters from ALL unfinished events so overlapping events stay together
-  const allClusters = buildClusters(unfinished);
+  const unfinishedClusters = buildClusters(unfinished);
 
   // A cluster needs moving if any event in it starts before now
   const hasPastEvent = cluster => cluster.some(e => e.start.getTime() < nowMs);
-  if (!allClusters.some(hasPastEvent)) return;
+  const hasUnfinishedToMove = unfinishedClusters.some(hasPastEvent);
+  if (!hasFinishedAfterNow && !hasUnfinishedToMove) return;
   calendar.pauseRendering();
-  let placementTime = new Date(nowMs);
-  let runningEnd = nowMs;
-  for (const cluster of allClusters) {
-    if (hasPastEvent(cluster)) {
-      // Move this cluster to placementTime
+
+  // --- Move finished-after-now clusters backwards from now ---
+  if (hasFinishedAfterNow) {
+    const finishedAfterNowClusters = buildClusters(finishedAfterNow.sort((a, b) => a.start.getTime() - b.start.getTime()));
+    let endTime = nowMs;
+    for (let i = finishedAfterNowClusters.length - 1; i >= 0; i--) {
+      const cluster = finishedAfterNowClusters[i];
+      const clusterDuration = getClusterEnd(cluster) - getClusterStart(cluster);
+      let newStartMs = endTime - clusterDuration;
       if (clusterHasLongEvent(cluster)) {
-        placementTime = roundUpTo5(placementTime);
+        newStartMs = roundDownTo5(new Date(newStartMs)).getTime();
       }
-      shiftCluster(cluster, placementTime);
-      placementTime = new Date(getClusterEnd(cluster));
-      runningEnd = placementTime.getTime();
-    } else {
-      // Future cluster — only push if it overlaps with runningEnd
-      const clusterStart = getClusterStart(cluster);
-      if (clusterStart < runningEnd) {
-        let newStart = new Date(runningEnd);
-        if (clusterHasLongEvent(cluster)) {
-          newStart = roundUpTo5(newStart);
+      shiftCluster(cluster, new Date(newStartMs));
+      endTime = newStartMs;
+    }
+
+    // --- Cascade finished-before-now clusters if toggle is on ---
+    if (finishedMode === 'cascade') {
+      const finishedBeforeNowClusters = buildClusters(finishedBeforeNow.sort((a, b) => a.start.getTime() - b.start.getTime()));
+      for (let i = finishedBeforeNowClusters.length - 1; i >= 0; i--) {
+        const cluster = finishedBeforeNowClusters[i];
+        const clusterEnd = getClusterEnd(cluster);
+        if (clusterEnd > endTime) {
+          const clusterDuration = clusterEnd - getClusterStart(cluster);
+          let newStartMs = endTime - clusterDuration;
+          if (clusterHasLongEvent(cluster)) {
+            newStartMs = roundDownTo5(new Date(newStartMs)).getTime();
+          }
+          shiftCluster(cluster, new Date(newStartMs));
+          endTime = newStartMs;
+        } else {
+          break;
         }
-        shiftCluster(cluster, newStart);
-        runningEnd = getClusterEnd(cluster);
+      }
+    }
+  }
+
+  // --- Pack unfinished clusters forwards from now (existing logic) ---
+  if (hasUnfinishedToMove) {
+    let placementTime = new Date(nowMs);
+    let runningEnd = nowMs;
+    for (const cluster of unfinishedClusters) {
+      if (hasPastEvent(cluster)) {
+        // Move this cluster to placementTime
+        if (clusterHasLongEvent(cluster)) {
+          placementTime = roundUpTo5(placementTime);
+        }
+        shiftCluster(cluster, placementTime);
+        placementTime = new Date(getClusterEnd(cluster));
+        runningEnd = placementTime.getTime();
       } else {
-        runningEnd = Math.max(runningEnd, getClusterEnd(cluster));
+        // Future cluster — only push if it overlaps with runningEnd
+        const clusterStart = getClusterStart(cluster);
+        if (clusterStart < runningEnd) {
+          let newStart = new Date(runningEnd);
+          if (clusterHasLongEvent(cluster)) {
+            newStart = roundUpTo5(newStart);
+          }
+          shiftCluster(cluster, newStart);
+          runningEnd = getClusterEnd(cluster);
+        } else {
+          runningEnd = Math.max(runningEnd, getClusterEnd(cluster));
+        }
       }
     }
   }
@@ -16853,12 +16910,14 @@ var _tmpl$ = /*#__PURE__*/web.template(`<div><h2>Calendar</h2><button>Create</bu
   _tmpl$5 = /*#__PURE__*/web.template(`<input type=time value=02:00>`),
   _tmpl$6 = /*#__PURE__*/web.template(`<button>Print Events`),
   _tmpl$7 = /*#__PURE__*/web.template(`<br>`),
-  _tmpl$8 = /*#__PURE__*/web.template(`<div>: `),
-  _tmpl$9 = /*#__PURE__*/web.template(`<div>`);
+  _tmpl$8 = /*#__PURE__*/web.template(`<label>Finished events: <select><option value=none>Don't move</option><option value=move>Move</option><option value=cascade>Move + cascade`),
+  _tmpl$9 = /*#__PURE__*/web.template(`<div>: `),
+  _tmpl$10 = /*#__PURE__*/web.template(`<div>`);
 const MOBILE_BREAKPOINT_WIDTH = 770;
 const [dupeEvents, setDupeEvents] = solidJs.createSignal({});
 const [showMore, setShowMore] = solidJs.createSignal(false);
 const [wrapperHeight, setWrapperHeight] = solidJs.createSignal(0);
+const [finishedMode, setFinishedMode] = solidJs.createSignal(localStorage.getItem('finishedMode') || 'move');
 dom.observe(document.body, () => {
   const dailiesColumn = document.querySelector('.tasks-column.daily');
   if (!dailiesColumn) return false;
@@ -16900,7 +16959,7 @@ dom.observe(document.body, () => {
   };
   const handleCatchup = () => {
     if (!state.calendar) return;
-    rescheduleEvents(state.calendar);
+    rescheduleEvents(state.calendar, finishedMode());
     state.scrollToTime == null || state.scrollToTime(getMinutesAgoString(getRoundedNow(5), 30, false));
   };
   function handleMinTimeChange(e) {
@@ -16949,12 +17008,23 @@ dom.observe(document.body, () => {
           var _el$15 = _tmpl$6();
           _el$15.$$click = printEvents;
           return _el$15;
-        })(), _tmpl$7(), web.memo(() => Object.entries(dupeEvents()).map(([eventName, duration]) => (() => {
+        })(), _tmpl$7(), (() => {
           var _el$17 = _tmpl$8(),
-            _el$18 = _el$17.firstChild;
-          web.insert(_el$17, eventName, _el$18);
-          web.insert(_el$17, () => msToHHMM(duration), null);
+            _el$18 = _el$17.firstChild,
+            _el$20 = _el$18.nextSibling;
+          _el$20.addEventListener("change", e => {
+            const val = e.currentTarget.value;
+            setFinishedMode(val);
+            localStorage.setItem('finishedMode', val);
+          });
+          web.effect(() => _el$20.value = finishedMode());
           return _el$17;
+        })(), _tmpl$7(), web.memo(() => Object.entries(dupeEvents()).map(([eventName, duration]) => (() => {
+          var _el$22 = _tmpl$9(),
+            _el$23 = _el$22.firstChild;
+          web.insert(_el$22, eventName, _el$23);
+          web.insert(_el$22, () => msToHHMM(duration), null);
+          return _el$22;
         })()))];
       })(), _el$10);
       var _ref$ = wrapperEl;
@@ -16987,12 +17057,17 @@ dom.observe(document.body, () => {
   const dailiesColumn = document.querySelector('.tasks-column.daily');
   if (!dailiesColumn) return false;
   web.render(() => (() => {
-    var _el$19 = _tmpl$9();
-    web.insert(_el$19, web.createComponent(TaskTools, {}), null);
-    web.insert(_el$19, web.createComponent(TaskHighlighter, {}), null);
-    return _el$19;
+    var _el$24 = _tmpl$10();
+    web.insert(_el$24, web.createComponent(TaskTools, {}), null);
+    web.insert(_el$24, web.createComponent(TaskHighlighter, {}), null);
+    return _el$24;
   })(), dailiesColumn);
   return true;
+});
+register('ctrl-shift-space', () => {
+  if (!state.calendar) return;
+  rescheduleEvents(state.calendar, finishedMode());
+  state.scrollToTime == null || state.scrollToTime(getMinutesAgoString(getRoundedNow(5), 30, false));
 });
 register('ctrl-space', () => {
   console.debug('pressed ctrl-space');

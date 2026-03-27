@@ -46,6 +46,13 @@ function roundUpTo5(date: Date): Date {
 	return new Date(rounded)
 }
 
+function roundDownTo5(date: Date): Date {
+	const ms = date.getTime()
+	const fiveMin = 5 * 60 * 1000
+	const rounded = Math.floor(ms / fiveMin) * fiveMin
+	return new Date(rounded)
+}
+
 function clusterHasLongEvent(cluster: Cluster): boolean {
 	return cluster.some(e => e.end.getTime() - e.start.getTime() >= 5 * 60 * 1000)
 }
@@ -61,7 +68,12 @@ function shiftCluster(cluster: Cluster, newStart: Date): void {
 	}
 }
 
-export function rescheduleEvents(calendar: Calendar): void {
+export type FinishedMode = 'none' | 'move' | 'cascade'
+
+export function rescheduleEvents(
+	calendar: Calendar,
+	finishedMode: FinishedMode = 'move'
+): void {
 	const now = getRoundedNow(5)
 	const nowMs = now.getTime()
 
@@ -71,45 +83,114 @@ export function rescheduleEvents(calendar: Calendar): void {
 	const selected = allEvents.filter(e => e.extendedProps.selected)
 	if (selected.length > 0) deselectEvents(selected)
 
+	// Separate into finished and unfinished
+	const finished = allEvents
+		.filter(e => isFinished(e))
+		.sort((a, b) => a.start.getTime() - b.start.getTime())
 	const unfinished = allEvents
 		.filter(e => !isFinished(e))
 		.sort((a, b) => a.start.getTime() - b.start.getTime())
 
+	const finishedAfterNow = finished.filter(e => e.end.getTime() > nowMs)
+	const finishedBeforeNow = finished.filter(e => e.end.getTime() <= nowMs)
+	const shouldMoveFinished = finishedMode !== 'none'
+	const hasFinishedAfterNow = shouldMoveFinished && finishedAfterNow.length > 0
+
 	// Build clusters from ALL unfinished events so overlapping events stay together
-	const allClusters = buildClusters(unfinished)
+	const unfinishedClusters = buildClusters(unfinished)
 
 	// A cluster needs moving if any event in it starts before now
 	const hasPastEvent = (cluster: Cluster) =>
 		cluster.some(e => e.start.getTime() < nowMs)
+	const hasUnfinishedToMove = unfinishedClusters.some(hasPastEvent)
 
-	if (!allClusters.some(hasPastEvent)) return
+	if (!hasFinishedAfterNow && !hasUnfinishedToMove) return
 
 	calendar.pauseRendering()
 
-	let placementTime = new Date(nowMs)
-	let runningEnd = nowMs
+	// --- Move finished-after-now clusters backwards from now ---
+	if (hasFinishedAfterNow) {
+		const finishedAfterNowClusters = buildClusters(
+			finishedAfterNow.sort(
+				(a, b) => a.start.getTime() - b.start.getTime()
+			)
+		)
 
-	for (const cluster of allClusters) {
-		if (hasPastEvent(cluster)) {
-			// Move this cluster to placementTime
+		let endTime = nowMs
+
+		for (let i = finishedAfterNowClusters.length - 1; i >= 0; i--) {
+			const cluster = finishedAfterNowClusters[i]
+			const clusterDuration =
+				getClusterEnd(cluster) - getClusterStart(cluster)
+			let newStartMs = endTime - clusterDuration
+
 			if (clusterHasLongEvent(cluster)) {
-				placementTime = roundUpTo5(placementTime)
+				newStartMs = roundDownTo5(new Date(newStartMs)).getTime()
 			}
-			shiftCluster(cluster, placementTime)
-			placementTime = new Date(getClusterEnd(cluster))
-			runningEnd = placementTime.getTime()
-		} else {
-			// Future cluster — only push if it overlaps with runningEnd
-			const clusterStart = getClusterStart(cluster)
-			if (clusterStart < runningEnd) {
-				let newStart = new Date(runningEnd)
-				if (clusterHasLongEvent(cluster)) {
-					newStart = roundUpTo5(newStart)
+
+			shiftCluster(cluster, new Date(newStartMs))
+			endTime = newStartMs
+		}
+
+		// --- Cascade finished-before-now clusters if toggle is on ---
+		if (finishedMode === 'cascade') {
+			const finishedBeforeNowClusters = buildClusters(
+				finishedBeforeNow.sort(
+					(a, b) => a.start.getTime() - b.start.getTime()
+				)
+			)
+
+			for (let i = finishedBeforeNowClusters.length - 1; i >= 0; i--) {
+				const cluster = finishedBeforeNowClusters[i]
+				const clusterEnd = getClusterEnd(cluster)
+
+				if (clusterEnd > endTime) {
+					const clusterDuration =
+						clusterEnd - getClusterStart(cluster)
+					let newStartMs = endTime - clusterDuration
+
+					if (clusterHasLongEvent(cluster)) {
+						newStartMs = roundDownTo5(
+							new Date(newStartMs)
+						).getTime()
+					}
+
+					shiftCluster(cluster, new Date(newStartMs))
+					endTime = newStartMs
+				} else {
+					break
 				}
-				shiftCluster(cluster, newStart)
-				runningEnd = getClusterEnd(cluster)
+			}
+		}
+	}
+
+	// --- Pack unfinished clusters forwards from now (existing logic) ---
+	if (hasUnfinishedToMove) {
+		let placementTime = new Date(nowMs)
+		let runningEnd = nowMs
+
+		for (const cluster of unfinishedClusters) {
+			if (hasPastEvent(cluster)) {
+				// Move this cluster to placementTime
+				if (clusterHasLongEvent(cluster)) {
+					placementTime = roundUpTo5(placementTime)
+				}
+				shiftCluster(cluster, placementTime)
+				placementTime = new Date(getClusterEnd(cluster))
+				runningEnd = placementTime.getTime()
 			} else {
-				runningEnd = Math.max(runningEnd, getClusterEnd(cluster))
+				// Future cluster — only push if it overlaps with runningEnd
+				const clusterStart = getClusterStart(cluster)
+				if (clusterStart < runningEnd) {
+					let newStart = new Date(runningEnd)
+					if (clusterHasLongEvent(cluster)) {
+						newStart = roundUpTo5(newStart)
+					}
+					shiftCluster(cluster, newStart)
+					runningEnd = getClusterEnd(cluster)
+				} else {
+					runningEnd = Math.max(runningEnd, getClusterEnd(cluster))
+				}
 			}
 		}
 	}
