@@ -407,9 +407,13 @@ export function createCalendar(initialEvents: EventSourceInput): void {
 
     const cleanupSelectionHandlers = setupSelectionHandlers(calendarEl, calendar)
     // Override the destroy method to include cleanup
+    const resizeObserver = new ResizeObserver(() => calendar.updateSize())
+    resizeObserver.observe(wrapperEl)
+
     const originalDestroy = calendar.destroy.bind(calendar)
     calendar.destroy = () => {
         console.debug('destroying calendar')
+        resizeObserver.disconnect()
         // Call the cleanup function
         cleanupSelectionHandlers()
         // Call the original destroy method
