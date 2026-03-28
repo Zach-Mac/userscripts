@@ -222,3 +222,53 @@ export function rescheduleEvents(calendar: Calendar, finishedMode: FinishedMode 
 
     calendar.resumeRendering()
 }
+
+function buildSoftClusters(sortedEvents: EventApi[], gapMs: number = 5 * 60 * 1000): Cluster[] {
+    if (sortedEvents.length === 0) return []
+    const clusters: Cluster[] = [[sortedEvents[0]]]
+    let clusterMaxEnd = sortedEvents[0].end.getTime()
+    for (let i = 1; i < sortedEvents.length; i++) {
+        const event = sortedEvents[i]
+        if (event.start.getTime() < clusterMaxEnd + gapMs) {
+            clusters[clusters.length - 1].push(event)
+        } else {
+            clusters.push([event])
+        }
+        clusterMaxEnd = Math.max(clusterMaxEnd, event.end.getTime())
+    }
+    return clusters
+}
+
+export function squeezeEvents(calendar: Calendar): void {
+    const now = getRoundedNow(5)
+    const nowMs = now.getTime()
+    const allEvents = calendar
+        .getEvents()
+        .filter(e => !isPinned(e))
+        .sort((a, b) => a.start.getTime() - b.start.getTime())
+
+    const softClusters = buildSoftClusters(allEvents)
+    if (softClusters.length === 0) return
+
+    const GAP = 5 * 60 * 1000
+    const nowGroupIdx = softClusters.findIndex(
+        c => getClusterStart(c) < nowMs + GAP && getClusterEnd(c) >= nowMs
+    )
+
+    calendar.pauseRendering()
+
+    if (nowGroupIdx !== -1) {
+        const nextIdx = nowGroupIdx + 1
+        if (nextIdx < softClusters.length) {
+            const nowGroupEnd = getClusterEnd(softClusters[nowGroupIdx])
+            shiftCluster(softClusters[nextIdx], new Date(nowGroupEnd))
+        }
+    } else {
+        const firstAfter = softClusters.find(c => getClusterStart(c) > nowMs)
+        if (firstAfter) {
+            shiftCluster(firstAfter, now)
+        }
+    }
+
+    calendar.resumeRendering()
+}

@@ -16945,8 +16945,46 @@ function rescheduleEvents(calendar, finishedMode = 'move') {
   }
   calendar.resumeRendering();
 }
+function buildSoftClusters(sortedEvents, gapMs = 5 * 60 * 1000) {
+  if (sortedEvents.length === 0) return [];
+  const clusters = [[sortedEvents[0]]];
+  let clusterMaxEnd = sortedEvents[0].end.getTime();
+  for (let i = 1; i < sortedEvents.length; i++) {
+    const event = sortedEvents[i];
+    if (event.start.getTime() < clusterMaxEnd + gapMs) {
+      clusters[clusters.length - 1].push(event);
+    } else {
+      clusters.push([event]);
+    }
+    clusterMaxEnd = Math.max(clusterMaxEnd, event.end.getTime());
+  }
+  return clusters;
+}
+function squeezeEvents(calendar) {
+  const now = getRoundedNow(5);
+  const nowMs = now.getTime();
+  const allEvents = calendar.getEvents().filter(e => !isPinned(e)).sort((a, b) => a.start.getTime() - b.start.getTime());
+  const softClusters = buildSoftClusters(allEvents);
+  if (softClusters.length === 0) return;
+  const GAP = 5 * 60 * 1000;
+  const nowGroupIdx = softClusters.findIndex(c => getClusterStart(c) < nowMs + GAP && getClusterEnd(c) >= nowMs);
+  calendar.pauseRendering();
+  if (nowGroupIdx !== -1) {
+    const nextIdx = nowGroupIdx + 1;
+    if (nextIdx < softClusters.length) {
+      const nowGroupEnd = getClusterEnd(softClusters[nowGroupIdx]);
+      shiftCluster(softClusters[nextIdx], new Date(nowGroupEnd));
+    }
+  } else {
+    const firstAfter = softClusters.find(c => getClusterStart(c) > nowMs);
+    if (firstAfter) {
+      shiftCluster(firstAfter, now);
+    }
+  }
+  calendar.resumeRendering();
+}
 
-var _tmpl$ = /*#__PURE__*/web.template(`<div><h2>Calendar</h2><button>Create</button><button>Delete</button><button>Copy</button><button>Load Saved</button><button>Catchup</button><button></button><br><div id=calendar-wrapper><div id=calendar>`),
+var _tmpl$ = /*#__PURE__*/web.template(`<div><h2>Calendar</h2><button>Create</button><button>Delete</button><button>Copy</button><button>Load Saved</button><button>Catchup</button><button>Squeeze</button><button></button><br><div id=calendar-wrapper><div id=calendar>`),
   _tmpl$2 = /*#__PURE__*/web.template(`<label>Min Time`),
   _tmpl$3 = /*#__PURE__*/web.template(`<input type=time value=03:00>`),
   _tmpl$4 = /*#__PURE__*/web.template(`<label>Max Time`),
@@ -17005,6 +17043,10 @@ dom.observe(document.body, () => {
     rescheduleEvents(state.calendar, finishedMode());
     state.scrollToTime == null || state.scrollToTime(getMinutesAgoString(getRoundedNow(5), 30, false));
   };
+  const handleSqueeze = () => {
+    if (!state.calendar) return;
+    squeezeEvents(state.calendar);
+  };
   function handleMinTimeChange(e) {
     var _state$calendar2;
     const input = e.target;
@@ -17029,51 +17071,53 @@ dom.observe(document.body, () => {
         _el$7 = _el$6.nextSibling,
         _el$8 = _el$7.nextSibling,
         _el$9 = _el$8.nextSibling,
-        _el$10 = _el$9.nextSibling;
+        _el$10 = _el$9.nextSibling,
+        _el$11 = _el$10.nextSibling;
       _el$3.$$click = handleCreateCal;
       _el$4.$$click = handleDeleteCal;
       _el$5.$$click = handleSaveCal;
       _el$6.$$click = handleLoadCal;
       _el$7.$$click = handleCatchup;
-      _el$8.$$click = () => setShowMore(!showMore());
-      web.insert(_el$8, () => showMore() ? 'Hide More' : 'Show More');
+      _el$8.$$click = handleSqueeze;
+      _el$9.$$click = () => setShowMore(!showMore());
+      web.insert(_el$9, () => showMore() ? 'Hide More' : 'Show More');
       web.insert(_el$, (() => {
         var _c$ = web.memo(() => !!showMore());
         return () => _c$() && [_tmpl$2(), (() => {
-          var _el$12 = _tmpl$3();
-          _el$12.$$input = handleMinTimeChange;
-          return _el$12;
+          var _el$13 = _tmpl$3();
+          _el$13.$$input = handleMinTimeChange;
+          return _el$13;
         })(), _tmpl$4(), (() => {
-          var _el$14 = _tmpl$5();
-          _el$14.$$input = handleMaxTimeChange;
-          return _el$14;
-        })(), (() => {
-          var _el$15 = _tmpl$6();
-          _el$15.$$click = printEvents;
+          var _el$15 = _tmpl$5();
+          _el$15.$$input = handleMaxTimeChange;
           return _el$15;
+        })(), (() => {
+          var _el$16 = _tmpl$6();
+          _el$16.$$click = printEvents;
+          return _el$16;
         })(), _tmpl$7(), (() => {
-          var _el$17 = _tmpl$8(),
-            _el$18 = _el$17.firstChild,
-            _el$20 = _el$18.nextSibling;
-          _el$20.addEventListener("change", e => {
+          var _el$18 = _tmpl$8(),
+            _el$19 = _el$18.firstChild,
+            _el$21 = _el$19.nextSibling;
+          _el$21.addEventListener("change", e => {
             const val = e.currentTarget.value;
             setFinishedMode(val);
             localStorage.setItem('finishedMode', val);
           });
-          web.effect(() => _el$20.value = finishedMode());
-          return _el$17;
+          web.effect(() => _el$21.value = finishedMode());
+          return _el$18;
         })(), _tmpl$7(), web.memo(() => Object.entries(dupeEvents()).map(([eventName, duration]) => (() => {
-          var _el$22 = _tmpl$9(),
-            _el$23 = _el$22.firstChild;
-          web.insert(_el$22, eventName, _el$23);
-          web.insert(_el$22, () => msToHHMM(duration), null);
-          return _el$22;
+          var _el$23 = _tmpl$9(),
+            _el$24 = _el$23.firstChild;
+          web.insert(_el$23, eventName, _el$24);
+          web.insert(_el$23, () => msToHHMM(duration), null);
+          return _el$23;
         })()))];
-      })(), _el$10);
+      })(), _el$11);
       var _ref$ = wrapperEl;
-      typeof _ref$ === "function" ? web.use(_ref$, _el$10) : wrapperEl = _el$10;
-      _el$10.style.setProperty("overflow", "auto");
-      web.effect(_$p => (_$p = wrapperHeight() + 'px') != null ? _el$10.style.setProperty("height", _$p) : _el$10.style.removeProperty("height"));
+      typeof _ref$ === "function" ? web.use(_ref$, _el$11) : wrapperEl = _el$11;
+      _el$11.style.setProperty("overflow", "auto");
+      web.effect(_$p => (_$p = wrapperHeight() + 'px') != null ? _el$11.style.setProperty("height", _$p) : _el$11.style.removeProperty("height"));
       return _el$;
     })();
   };
@@ -17100,10 +17144,10 @@ dom.observe(document.body, () => {
   const dailiesColumn = document.querySelector('.tasks-column.daily');
   if (!dailiesColumn) return false;
   web.render(() => (() => {
-    var _el$24 = _tmpl$10();
-    web.insert(_el$24, web.createComponent(TaskTools, {}), null);
-    web.insert(_el$24, web.createComponent(TaskHighlighter, {}), null);
-    return _el$24;
+    var _el$25 = _tmpl$10();
+    web.insert(_el$25, web.createComponent(TaskTools, {}), null);
+    web.insert(_el$25, web.createComponent(TaskHighlighter, {}), null);
+    return _el$25;
   })(), dailiesColumn);
   return true;
 });
@@ -17111,6 +17155,10 @@ register('ctrl-shift-space', () => {
   if (!state.calendar) return;
   rescheduleEvents(state.calendar, finishedMode());
   state.scrollToTime == null || state.scrollToTime(getMinutesAgoString(getRoundedNow(5), 30, false));
+});
+register('ctrl-shift-s', () => {
+  if (!state.calendar) return;
+  squeezeEvents(state.calendar);
 });
 register('ctrl-space', () => {
   console.debug('pressed ctrl-space');

@@ -16,7 +16,7 @@ import { TaskTools } from './taskTools.jsx'
 import { TaskHighlighter } from './taskHighlighter.jsx'
 import { EventInput } from '@fullcalendar/core'
 import { register } from '@violentmonkey/shortcut'
-import { rescheduleEvents, FinishedMode } from './utils/reschedule.js'
+import { rescheduleEvents, squeezeEvents, FinishedMode } from './utils/reschedule.js'
 
 const MOBILE_BREAKPOINT_WIDTH = 770
 
@@ -84,6 +84,10 @@ const initCalendar = observe(document.body, () => {
         rescheduleEvents(state.calendar, finishedMode())
         state.scrollToTime?.(getMinutesAgoString(getRoundedNow(5), 30, false))
     }
+    const handleSqueeze = () => {
+        if (!state.calendar) return
+        squeezeEvents(state.calendar)
+    }
 
     function handleMinTimeChange(e: Event) {
         const input = e.target as HTMLInputElement
@@ -106,6 +110,7 @@ const initCalendar = observe(document.body, () => {
                 <button onClick={handleSaveCal}>Copy</button>
                 <button onClick={handleLoadCal}>Load Saved</button>
                 <button onClick={handleCatchup}>Catchup</button>
+                <button onClick={handleSqueeze}>Squeeze</button>
                 <button onClick={() => setShowMore(!showMore())}>
                     {showMore() ? 'Hide More' : 'Show More'}
                 </button>
@@ -201,6 +206,11 @@ register('ctrl-shift-space', () => {
     if (!state.calendar) return
     rescheduleEvents(state.calendar, finishedMode())
     state.scrollToTime?.(getMinutesAgoString(getRoundedNow(5), 30, false))
+})
+
+register('ctrl-shift-s', () => {
+    if (!state.calendar) return
+    squeezeEvents(state.calendar)
 })
 
 register('ctrl-space', () => {
