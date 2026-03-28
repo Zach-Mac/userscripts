@@ -123,7 +123,7 @@ const initCalendar = observe(document.body, () => {
                             Finished events:{' '}
                             <select
                                 value={finishedMode()}
-                                onChange={(e) => {
+                                onChange={e => {
                                     const val = e.currentTarget.value as FinishedMode
                                     setFinishedMode(val)
                                     localStorage.setItem('finishedMode', val)

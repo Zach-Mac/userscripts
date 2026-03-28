@@ -10,12 +10,13 @@ import interactionPlugin from '@fullcalendar/interaction'
 import { addSelectionStyles, selectEvents, setupSelectionHandlers } from './selection'
 import { parseTime, msToHHMMSS, getRoundedNow, getMinutesAgoString, throttle } from './utils'
 import { colors, zoomLevels, state, getHoursInDay, getDayHeight } from '../global'
-import { createEvent } from './events'
+import { createEvent, cyclePinType } from './events'
 
 export function createCalendar(initialEvents: EventSourceInput): void {
     const calendarEl = document.getElementById('calendar')
     const wrapperEl = document.getElementById('calendar-wrapper')
 
+    // eslint-disable-next-line prefer-const
     let calendar: Calendar
 
     const slotMinTime: Duration = '03:00:00'
@@ -346,6 +347,9 @@ export function createCalendar(initialEvents: EventSourceInput): void {
 
             const formattedDuration = hoursString + spacer + minutesString
 
+            const pinType = renderProps.event.extendedProps.pinType
+            const pinPrefix = pinType === 'solid' ? '📌 ' : pinType === 'ghost' ? '👻📌 ' : ''
+
             // Create the custom content
             return createElement('div', { className: 'fc-event-main-frame' }, [
                 createElement(
@@ -357,7 +361,7 @@ export function createCalendar(initialEvents: EventSourceInput): void {
                     createElement(
                         'div',
                         { className: ['fc-event-title fc-sticky'] },
-                        renderProps.event.title
+                        pinPrefix + renderProps.event.title
                     )
                 ])
             ])
@@ -384,6 +388,18 @@ export function createCalendar(initialEvents: EventSourceInput): void {
                 if (confirm(`Delete event "${info.event.title}"?`)) {
                     info.event.remove()
                 }
+            })
+
+            // Handle middle click - cycle pin type
+            // Prevent auto-scroll on mousedown so auxclick can fire cleanly
+            info.el.addEventListener('mousedown', jsEvent => {
+                if (jsEvent.button === 1) jsEvent.preventDefault()
+            })
+            info.el.addEventListener('auxclick', jsEvent => {
+                if (jsEvent.button !== 1) return
+                jsEvent.preventDefault()
+                const nextPin = cyclePinType(info.event.extendedProps.pinType)
+                info.event.setExtendedProp('pinType', nextPin)
             })
         },
         eventClick: info => {

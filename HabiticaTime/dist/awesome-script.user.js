@@ -15479,6 +15479,11 @@ function throttle(func, delay) {
   };
 }
 
+function cyclePinType(current) {
+  if (!current) return 'solid';
+  if (current === 'solid') return 'ghost';
+  return undefined;
+}
 function createEvent(event) {
   const uniqueId = Math.random().toString(36).substring(2);
   return {
@@ -15533,6 +15538,8 @@ function setEventExtendedProp(event, key, value) {
 function createCalendar(initialEvents) {
   const calendarEl = document.getElementById('calendar');
   const wrapperEl = document.getElementById('calendar-wrapper');
+
+  // eslint-disable-next-line prefer-const
   let calendar;
   const slotMinTime = '03:00:00';
   const slotMaxTime = '34:00:00';
@@ -15770,6 +15777,8 @@ function createCalendar(initialEvents) {
       const spacer = hours > 0 && minutes > 0 ? ' ' : '';
       const minutesString = minutes > 0 ? `${minutes}m` : '';
       const formattedDuration = hoursString + spacer + minutesString;
+      const pinType = renderProps.event.extendedProps.pinType;
+      const pinPrefix = pinType === 'solid' ? '📌 ' : pinType === 'ghost' ? '👻📌 ' : '';
 
       // Create the custom content
       return createElement('div', {
@@ -15780,7 +15789,7 @@ function createCalendar(initialEvents) {
         className: 'fc-event-title-container'
       }, [createElement('div', {
         className: ['fc-event-title fc-sticky']
-      }, renderProps.event.title)])]);
+      }, pinPrefix + renderProps.event.title)])]);
     },
     select: info => {
       if (!shiftPressed) addEvent(info);
@@ -15803,6 +15812,18 @@ function createCalendar(initialEvents) {
         if (confirm(`Delete event "${info.event.title}"?`)) {
           info.event.remove();
         }
+      });
+
+      // Handle middle click - cycle pin type
+      // Prevent auto-scroll on mousedown so auxclick can fire cleanly
+      info.el.addEventListener('mousedown', jsEvent => {
+        if (jsEvent.button === 1) jsEvent.preventDefault();
+      });
+      info.el.addEventListener('auxclick', jsEvent => {
+        if (jsEvent.button !== 1) return;
+        jsEvent.preventDefault();
+        const nextPin = cyclePinType(info.event.extendedProps.pinType);
+        info.event.setExtendedProp('pinType', nextPin);
       });
     },
     eventClick: info => {
@@ -16764,6 +16785,19 @@ function isFinished(event) {
   if (((_event$extendedProps$ = event.extendedProps.original) == null ? void 0 : _event$extendedProps$.backgroundColor) === finishedColor) return true;
   return false;
 }
+function isPinned(event) {
+  return event.extendedProps.pinType === 'solid' || event.extendedProps.pinType === 'ghost';
+}
+function findPlacementAvoidingSolidPins(proposedStart, duration, solidPins) {
+  let start = proposedStart;
+  let end = start + duration;
+  for (const pin of solidPins) {
+    if (end <= pin.start || start >= pin.end) continue;
+    start = pin.end;
+    end = start + duration;
+  }
+  return start;
+}
 function buildClusters(sortedEvents) {
   if (sortedEvents.length === 0) return [];
   const clusters = [[sortedEvents[0]]];
@@ -16818,9 +16852,15 @@ function rescheduleEvents(calendar, finishedMode = 'move') {
   const selected = allEvents.filter(e => e.extendedProps.selected);
   if (selected.length > 0) deselectEvents(selected);
 
-  // Separate into finished and unfinished
-  const finished = allEvents.filter(e => isFinished(e)).sort((a, b) => a.start.getTime() - b.start.getTime());
-  const unfinished = allEvents.filter(e => !isFinished(e)).sort((a, b) => a.start.getTime() - b.start.getTime());
+  // Separate into finished and unfinished (excluding pinned events)
+  const finished = allEvents.filter(e => isFinished(e) && !isPinned(e)).sort((a, b) => a.start.getTime() - b.start.getTime());
+  const unfinished = allEvents.filter(e => !isFinished(e) && !isPinned(e)).sort((a, b) => a.start.getTime() - b.start.getTime());
+
+  // Collect solid pins as obstacles for forward packing
+  const solidPins = allEvents.filter(e => e.extendedProps.pinType === 'solid').map(e => ({
+    start: e.start.getTime(),
+    end: e.end.getTime()
+  })).sort((a, b) => a.start - b.start);
   const finishedAfterNow = finished.filter(e => e.end.getTime() > nowMs);
   const finishedBeforeNow = finished.filter(e => e.end.getTime() <= nowMs);
   const shouldMoveFinished = finishedMode !== 'none';
@@ -16876,12 +16916,14 @@ function rescheduleEvents(calendar, finishedMode = 'move') {
     let placementTime = new Date(nowMs);
     let runningEnd = nowMs;
     for (const cluster of unfinishedClusters) {
+      const clusterDuration = getClusterEnd(cluster) - getClusterStart(cluster);
       if (hasPastEvent(cluster)) {
         // Move this cluster to placementTime
         if (clusterHasLongEvent(cluster)) {
           placementTime = roundUpTo5(placementTime);
         }
-        shiftCluster(cluster, placementTime);
+        const adjustedStart = findPlacementAvoidingSolidPins(placementTime.getTime(), clusterDuration, solidPins);
+        shiftCluster(cluster, new Date(adjustedStart));
         placementTime = new Date(getClusterEnd(cluster));
         runningEnd = placementTime.getTime();
       } else {
@@ -16892,7 +16934,8 @@ function rescheduleEvents(calendar, finishedMode = 'move') {
           if (clusterHasLongEvent(cluster)) {
             newStart = roundUpTo5(newStart);
           }
-          shiftCluster(cluster, newStart);
+          const adjustedStart = findPlacementAvoidingSolidPins(newStart.getTime(), clusterDuration, solidPins);
+          shiftCluster(cluster, new Date(adjustedStart));
           runningEnd = getClusterEnd(cluster);
         } else {
           runningEnd = Math.max(runningEnd, getClusterEnd(cluster));
