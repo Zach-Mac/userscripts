@@ -92,6 +92,8 @@ export type FinishedMode = 'none' | 'move' | 'cascade'
 export function rescheduleEvents(calendar: Calendar, finishedMode: FinishedMode = 'move'): void {
     const now = getRoundedNow(5)
     const nowMs = now.getTime()
+    const nowRoundedDown = roundDownTo5(new Date())
+    const nowRoundedDownMs = nowRoundedDown.getTime()
 
     const allEvents = calendar.getEvents()
 
@@ -113,8 +115,8 @@ export function rescheduleEvents(calendar: Calendar, finishedMode: FinishedMode 
         .map(e => ({ start: e.start!.getTime(), end: e.end!.getTime() }))
         .sort((a, b) => a.start - b.start)
 
-    const finishedAfterNow = finished.filter(e => e.end.getTime() > nowMs)
-    const finishedBeforeNow = finished.filter(e => e.end.getTime() <= nowMs)
+    const finishedAfterNow = finished.filter(e => e.end.getTime() > nowRoundedDownMs)
+    const finishedBeforeNow = finished.filter(e => e.end.getTime() <= nowRoundedDownMs)
     const shouldMoveFinished = finishedMode !== 'none'
     const hasFinishedAfterNow = shouldMoveFinished && finishedAfterNow.length > 0
 
@@ -135,7 +137,7 @@ export function rescheduleEvents(calendar: Calendar, finishedMode: FinishedMode 
             finishedAfterNow.sort((a, b) => a.start.getTime() - b.start.getTime())
         )
 
-        let endTime = nowMs
+        let endTime = nowRoundedDownMs
 
         for (let i = finishedAfterNowClusters.length - 1; i >= 0; i--) {
             const cluster = finishedAfterNowClusters[i]

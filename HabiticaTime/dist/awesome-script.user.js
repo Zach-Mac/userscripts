@@ -16860,6 +16860,8 @@ function shiftCluster(cluster, newStart) {
 function rescheduleEvents(calendar, finishedMode = 'move') {
   const now = getRoundedNow(5);
   const nowMs = now.getTime();
+  const nowRoundedDown = roundDownTo5(new Date());
+  const nowRoundedDownMs = nowRoundedDown.getTime();
   const allEvents = calendar.getEvents();
 
   // Deselect all selected events first
@@ -16875,8 +16877,8 @@ function rescheduleEvents(calendar, finishedMode = 'move') {
     start: e.start.getTime(),
     end: e.end.getTime()
   })).sort((a, b) => a.start - b.start);
-  const finishedAfterNow = finished.filter(e => e.end.getTime() > nowMs);
-  const finishedBeforeNow = finished.filter(e => e.end.getTime() <= nowMs);
+  const finishedAfterNow = finished.filter(e => e.end.getTime() > nowRoundedDownMs);
+  const finishedBeforeNow = finished.filter(e => e.end.getTime() <= nowRoundedDownMs);
   const shouldMoveFinished = finishedMode !== 'none';
   const hasFinishedAfterNow = shouldMoveFinished && finishedAfterNow.length > 0;
 
@@ -16892,7 +16894,7 @@ function rescheduleEvents(calendar, finishedMode = 'move') {
   // --- Move finished-after-now clusters backwards from now ---
   if (hasFinishedAfterNow) {
     const finishedAfterNowClusters = buildClusters(finishedAfterNow.sort((a, b) => a.start.getTime() - b.start.getTime()));
-    let endTime = nowMs;
+    let endTime = nowRoundedDownMs;
     for (let i = finishedAfterNowClusters.length - 1; i >= 0; i--) {
       const cluster = finishedAfterNowClusters[i];
       const clusterDuration = getClusterEnd(cluster) - getClusterStart(cluster);
