@@ -15157,10 +15157,12 @@ var color = Color;
 
 var Color$1 = /*@__PURE__*/getDefaultExportFromCjs(color);
 
+var _localStorage$getItem;
 const state = {
   currZoomLevel: 2,
   calendar: null,
-  scrollToTime: null
+  scrollToTime: null,
+  ghostOpacity: parseFloat((_localStorage$getItem = localStorage.getItem('ghostOpacity')) != null ? _localStorage$getItem : '0.4')
 };
 const overheadHeight = 84.39080000000013;
 function getHoursInDay(slotMinTime, slotMaxTime) {
@@ -15795,6 +15797,10 @@ function createCalendar(initialEvents) {
       if (!shiftPressed) addEvent(info);
       calendar.unselect();
     },
+    eventClassNames: info => {
+      if (info.event.extendedProps.pinType === 'ghost') return ['ghost-pin'];
+      return [];
+    },
     allDaySlot: false,
     events: initialEvents,
     eventsSet: events => {
@@ -15841,6 +15847,12 @@ function createCalendar(initialEvents) {
   };
   calendar = new Calendar(calendarEl, calendarOptions);
   addSelectionStyles();
+
+  // Ghost pin opacity CSS
+  const ghostStyle = document.createElement('style');
+  ghostStyle.innerHTML = `.ghost-pin { opacity: var(--ghost-opacity, ${state.ghostOpacity}); }`;
+  document.head.appendChild(ghostStyle);
+  calendarEl.style.setProperty('--ghost-opacity', String(state.ghostOpacity));
   const cleanupSelectionHandlers = setupSelectionHandlers(calendarEl, calendar);
   // Override the destroy method to include cleanup
   const resizeObserver = new ResizeObserver(() => calendar.updateSize());
@@ -16992,13 +17004,15 @@ var _tmpl$ = /*#__PURE__*/web.template(`<div><h2>Calendar</h2><button>Create</bu
   _tmpl$6 = /*#__PURE__*/web.template(`<button>Print Events`),
   _tmpl$7 = /*#__PURE__*/web.template(`<br>`),
   _tmpl$8 = /*#__PURE__*/web.template(`<label>Finished events: <select><option value=none>Don't move</option><option value=move>Move</option><option value=cascade>Move + cascade`),
-  _tmpl$9 = /*#__PURE__*/web.template(`<div>: `),
-  _tmpl$10 = /*#__PURE__*/web.template(`<div>`);
+  _tmpl$9 = /*#__PURE__*/web.template(`<label>Ghost opacity: <input type=range min=0.1 max=1 step=0.05>`),
+  _tmpl$10 = /*#__PURE__*/web.template(`<div>: `),
+  _tmpl$11 = /*#__PURE__*/web.template(`<div>`);
 const MOBILE_BREAKPOINT_WIDTH = 770;
 const [dupeEvents, setDupeEvents] = solidJs.createSignal({});
 const [showMore, setShowMore] = solidJs.createSignal(false);
 const [wrapperHeight, setWrapperHeight] = solidJs.createSignal(0);
 const [finishedMode, setFinishedMode] = solidJs.createSignal(localStorage.getItem('finishedMode') || 'move');
+const [ghostOpacity, setGhostOpacity] = solidJs.createSignal(state.ghostOpacity);
 dom.observe(document.body, () => {
   const dailiesColumn = document.querySelector('.tasks-column.daily');
   if (!dailiesColumn) return false;
@@ -17106,12 +17120,27 @@ dom.observe(document.body, () => {
           });
           web.effect(() => _el$21.value = finishedMode());
           return _el$18;
-        })(), _tmpl$7(), web.memo(() => Object.entries(dupeEvents()).map(([eventName, duration]) => (() => {
+        })(), _tmpl$7(), (() => {
           var _el$23 = _tmpl$9(),
-            _el$24 = _el$23.firstChild;
-          web.insert(_el$23, eventName, _el$24);
-          web.insert(_el$23, () => msToHHMM(duration), null);
+            _el$24 = _el$23.firstChild,
+            _el$25 = _el$24.nextSibling;
+          web.insert(_el$23, () => ghostOpacity().toFixed(2), _el$25);
+          _el$25.$$input = e => {
+            const val = parseFloat(e.currentTarget.value);
+            setGhostOpacity(val);
+            state.ghostOpacity = val;
+            localStorage.setItem('ghostOpacity', val.toString());
+            const calEl = document.getElementById('calendar');
+            calEl == null || calEl.style.setProperty('--ghost-opacity', String(val));
+          };
+          web.effect(() => _el$25.value = ghostOpacity());
           return _el$23;
+        })(), _tmpl$7(), web.memo(() => Object.entries(dupeEvents()).map(([eventName, duration]) => (() => {
+          var _el$27 = _tmpl$10(),
+            _el$28 = _el$27.firstChild;
+          web.insert(_el$27, eventName, _el$28);
+          web.insert(_el$27, () => msToHHMM(duration), null);
+          return _el$27;
         })()))];
       })(), _el$11);
       var _ref$ = wrapperEl;
@@ -17144,10 +17173,10 @@ dom.observe(document.body, () => {
   const dailiesColumn = document.querySelector('.tasks-column.daily');
   if (!dailiesColumn) return false;
   web.render(() => (() => {
-    var _el$25 = _tmpl$10();
-    web.insert(_el$25, web.createComponent(TaskTools, {}), null);
-    web.insert(_el$25, web.createComponent(TaskHighlighter, {}), null);
-    return _el$25;
+    var _el$29 = _tmpl$11();
+    web.insert(_el$29, web.createComponent(TaskTools, {}), null);
+    web.insert(_el$29, web.createComponent(TaskHighlighter, {}), null);
+    return _el$29;
   })(), dailiesColumn);
   return true;
 });

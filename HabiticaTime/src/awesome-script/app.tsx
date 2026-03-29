@@ -26,6 +26,7 @@ const [wrapperHeight, setWrapperHeight] = createSignal(0)
 const [finishedMode, setFinishedMode] = createSignal<FinishedMode>(
     (localStorage.getItem('finishedMode') as FinishedMode) || 'move'
 )
+const [ghostOpacity, setGhostOpacity] = createSignal(state.ghostOpacity)
 
 function playSound(url) {
     const audio = new Audio(url)
@@ -138,6 +139,25 @@ const initCalendar = observe(document.body, () => {
                                 <option value="move">Move</option>
                                 <option value="cascade">Move + cascade</option>
                             </select>
+                        </label>
+                        <br />
+                        <label>
+                            Ghost opacity: {ghostOpacity().toFixed(2)}
+                            <input
+                                type="range"
+                                min="0.1"
+                                max="1"
+                                step="0.05"
+                                value={ghostOpacity()}
+                                onInput={e => {
+                                    const val = parseFloat(e.currentTarget.value)
+                                    setGhostOpacity(val)
+                                    state.ghostOpacity = val
+                                    localStorage.setItem('ghostOpacity', val.toString())
+                                    const calEl = document.getElementById('calendar')
+                                    calEl?.style.setProperty('--ghost-opacity', String(val))
+                                }}
+                            />
                         </label>
                         <br />
 

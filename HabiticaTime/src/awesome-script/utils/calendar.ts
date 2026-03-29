@@ -370,6 +370,10 @@ export function createCalendar(initialEvents: EventSourceInput): void {
             if (!shiftPressed) addEvent(info)
             calendar.unselect()
         },
+        eventClassNames: info => {
+            if (info.event.extendedProps.pinType === 'ghost') return ['ghost-pin']
+            return []
+        },
         allDaySlot: false,
         events: initialEvents,
         eventsSet: events => {
@@ -420,6 +424,12 @@ export function createCalendar(initialEvents: EventSourceInput): void {
     calendar = new Calendar(calendarEl, calendarOptions)
 
     addSelectionStyles()
+
+    // Ghost pin opacity CSS
+    const ghostStyle = document.createElement('style')
+    ghostStyle.innerHTML = `.ghost-pin { opacity: var(--ghost-opacity, ${state.ghostOpacity}); }`
+    document.head.appendChild(ghostStyle)
+    calendarEl.style.setProperty('--ghost-opacity', String(state.ghostOpacity))
 
     const cleanupSelectionHandlers = setupSelectionHandlers(calendarEl, calendar)
     // Override the destroy method to include cleanup

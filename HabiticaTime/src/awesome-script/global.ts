@@ -4,7 +4,8 @@ import Color from 'color'
 export const state = {
     currZoomLevel: 2,
     calendar: null as Calendar | null,
-    scrollToTime: null as (timeInput: number | string) => void | null
+    scrollToTime: null as (timeInput: number | string) => void | null,
+    ghostOpacity: parseFloat(localStorage.getItem('ghostOpacity') ?? '0.4')
 }
 
 const overheadHeight = 84.39080000000013
