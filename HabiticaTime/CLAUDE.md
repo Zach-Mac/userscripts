@@ -33,14 +33,15 @@ yarn open
 - Injects a calendar column next to dailies using FullCalendar (`utils/calendar.ts`)
 - Injects a `TimeCalc` component showing current time + remaining task time
 - Injects `TaskTools` (enable/disable/skip dailies) and `TaskHighlighter` (highlight tasks with `%` in notes)
-- Registers keyboard shortcuts via `@violentmonkey/shortcut` (`ctrl-space`, `ctrl-alt-e`, `ctrl-alt-h`)
+- Registers keyboard shortcuts via `@violentmonkey/shortcut` (`ctrl-space`, `ctrl-shift-space`, `ctrl-shift-s`, `ctrl-alt-e`, `ctrl-alt-h`)
 
 **Key modules**:
 - `utils/habitica.ts` — Parses Habitica DOM: reads task colors, titles, notes, and duration notation (`30m` = 30 min, `15fm` = 15 "full" min, `pt=9:30am` = preferred time, `pto=+10m` = preferred time offset). Interacts with Habitica's Vue.js inputs to modify tasks.
-- `utils/calendar.ts` — Creates and configures the FullCalendar instance with zoom (ctrl+scroll/+/-), custom scroll management, drag-and-drop events, shift-click selection, right-click delete.
-- `utils/events.ts` — Event creation with unique IDs, batched property setters to minimize FullCalendar re-renders.
+- `utils/calendar.ts` — Creates and configures the FullCalendar instance with zoom (ctrl+scroll/+/-), custom scroll management, drag-and-drop events, shift-click selection, right-click delete, middle-click pin cycling.
+- `utils/events.ts` — Event creation with unique IDs, batched property setters to minimize FullCalendar re-renders. Defines `PinType` and `cyclePinType` for pin state management.
+- `utils/reschedule.ts` — Catchup (reschedule events around NOW) and squeeze (pull next event group adjacent to current). Respects pin types when rescheduling.
 - `utils/selection.ts` — Rectangle-based multi-select with auto-scroll.
-- `global.ts` — Shared state (calendar instance, zoom levels, color palette using the `color` library).
+- `global.ts` — Shared state (calendar instance, zoom levels, color palette, ghost pin opacity).
 - `timeCalc.tsx` — Displays `Current + Task = End + Full = Full End` time calculation bar.
 - `taskTools.tsx` — Toggle buttons to bulk enable/disable/skip dailies by manipulating Habitica's "Repeat Every" field.
 - `taskHighlighter.tsx` — Highlights tasks containing `%` in notes; shows count in a floating panel.
@@ -71,3 +72,35 @@ Tasks use a specific notation in Habitica task notes that the script parses:
 - `%` — marks task for highlighting (taskHighlighter)
 
 A task cannot have both `pt` and `pto`.
+
+## Event Interactions
+
+- **Left click** — Toggle finished state
+- **Right click** — Delete event (with confirmation)
+- **Middle click** — Cycle pin type: unpinned → solid (`📌`) → ghost (`👻📌`) → unpinned
+- **Shift+click drag** — Rectangle multi-select
+- **Ctrl+scroll / Ctrl+`+`/`-`** — Zoom
+
+## Pins
+
+Events can be pinned to prevent catchup/reschedule from moving them. Pin state is stored in `extendedProps.pinType` and persists via localStorage.
+
+- **Solid pin** (`📌`): Event stays in place. Catchup packs other events around it without overlapping.
+- **Ghost pin** (`👻📌`): Event stays in place. Catchup completely ignores it (other events can overlap). Ghost pins render at reduced opacity (configurable via slider in "Show More" menu, stored in localStorage as `ghostOpacity`).
+
+Pin cycling is handled by `cyclePinType()` in `utils/events.ts`. Visual styling uses FullCalendar's `eventClassNames` callback (adds `.ghost-pin` class) with a `--ghost-opacity` CSS variable on the calendar element.
+
+## Catchup & Squeeze
+
+**Catchup** (`rescheduleEvents` in `utils/reschedule.ts`):
+- Packs unfinished events forward from NOW, finished events backward from NOW
+- Respects solid pins as obstacles (events route around them), ignores ghost pins entirely
+- Finished event handling is configurable: don't move / move / move + cascade (setting in "Show More" menu)
+- Keyboard shortcut: `ctrl-shift-space`
+
+**Squeeze** (`squeezeEvents` in `utils/reschedule.ts`):
+- Finds the "NOW-group" — the continuous group of events touching NOW (gaps <5m treated as continuous via `buildSoftClusters`)
+- Pulls the next group after the NOW-group to be adjacent (closing the gap)
+- If no NOW-group exists, pulls the first future group to start at NOW
+- One group per press (incremental)
+- Keyboard shortcut: `ctrl-shift-s`

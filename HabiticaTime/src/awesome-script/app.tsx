@@ -1,5 +1,6 @@
 import { render } from 'solid-js/web'
 import { observe } from '@violentmonkey/dom'
+import globalCss from './style.css'
 
 import { createCalendar } from './utils/calendar.js'
 import { state } from './global.js'
@@ -36,6 +37,8 @@ function playSound(url) {
 function playNotification() {
     playSound('https://habitica.com/static/audio/spacePenguinTheme/Chat.ogg')
 }
+
+GM_addStyle(globalCss)
 
 const initCalendar = observe(document.body, () => {
     const dailiesColumn = document.querySelector('.tasks-column.daily')
@@ -105,17 +108,46 @@ const initCalendar = observe(document.body, () => {
         let wrapperEl: HTMLDivElement
         return (
             <div>
-                <h2>Calendar</h2>
-                <button onClick={handleCreateCal}>Create</button>
-                <button onClick={handleDeleteCal}>Delete</button>
-                <button onClick={handleSaveCal}>Copy</button>
-                <button onClick={handleLoadCal}>Load Saved</button>
-                <button onClick={handleCatchup}>Catchup</button>
-                <button onClick={handleSqueeze}>Squeeze</button>
-                <button onClick={() => setShowMore(!showMore())}>
-                    {showMore() ? 'Hide More' : 'Show More'}
-                </button>
-                <br />
+                <div style={{ display: 'flex', 'align-items': 'center' }}>
+                    <h2
+                        style={{
+                            'margin-bottom': '0',
+                            overflow: 'hidden',
+                            'text-overflow': 'ellipsis',
+                            'white-space': 'nowrap',
+                            padding: '2px 0'
+                        }}
+                    >
+                        Calendar
+                    </h2>
+                    <div style={{ 'margin-left': 'auto', display: 'flex', 'flex-wrap': 'wrap' }}>
+                        <button class="cal-header-btn" onClick={handleCreateCal}>
+                            Create
+                        </button>
+                        <button class="cal-header-btn" onClick={handleDeleteCal}>
+                            Delete
+                        </button>
+                        <button class="cal-header-btn" onClick={handleSaveCal}>
+                            Copy
+                        </button>
+                        <button class="cal-header-btn" onClick={handleLoadCal}>
+                            Load
+                        </button>
+                        <button
+                            class="cal-header-btn"
+                            onClick={handleCatchup}
+                            title="Ctrl+Shift+Space"
+                        >
+                            Catchup
+                        </button>
+                        <button class="cal-header-btn" onClick={handleSqueeze} title="Ctrl+Shift+S">
+                            Squeeze
+                        </button>
+                        <button class="cal-header-btn" onClick={() => setShowMore(!showMore())}>
+                            {showMore() ? 'Less' : 'More'}
+                        </button>
+                    </div>
+                </div>
                 {showMore() && (
                     <>
                         {/* Moved time inputs and print events here */}

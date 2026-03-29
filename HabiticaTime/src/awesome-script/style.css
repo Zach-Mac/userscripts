@@ -1,2 +1,24 @@
 /* global css */
 /* Note: might conflict with existing styles if not in shadow DOM */
+
+/* Calendar header buttons — match Habitica's .filter.small-text style */
+.cal-header-btn {
+    font-size: 12px;
+    font-weight: 700;
+    font-style: normal;
+    line-height: 1.33;
+    color: #686274;
+    padding: 0 4px 0 4px;
+    cursor: pointer;
+    white-space: nowrap;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+}
+.cal-header-btn:hover {
+    color: #4f2a93;
+}
+.cal-header-btn:active {
+    color: #4f2a93;
+    border-bottom-color: #4f2a93;
+}
