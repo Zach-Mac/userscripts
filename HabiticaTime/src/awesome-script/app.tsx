@@ -17,7 +17,7 @@ import { TaskTools } from './taskTools.jsx'
 import { TaskHighlighter } from './taskHighlighter.jsx'
 import { EventInput } from '@fullcalendar/core'
 import { register } from '@violentmonkey/shortcut'
-import { rescheduleEvents, squeezeEvents, FinishedMode } from './utils/reschedule.js'
+import { catchupEvents, squeezeEvents, FinishedMode } from './utils/reschedule.js'
 
 const MOBILE_BREAKPOINT_WIDTH = 770
 
@@ -59,7 +59,7 @@ function handleSqueeze() {
 
 function handleCatchup() {
     if (!state.calendar) return
-    rescheduleEvents(state.calendar, finishedMode())
+    catchupEvents(state.calendar, finishedMode())
     scrollToNow()
 }
 

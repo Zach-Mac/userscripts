@@ -31,23 +31,23 @@ function findPlacementAvoidingSolidPins(
 
 type Cluster = EventApi[]
 
-function buildClusters(sortedEvents: EventApi[]): Cluster[] {
+function buildOverlapGroups(sortedEvents: EventApi[]): Cluster[] {
     if (sortedEvents.length === 0) return []
 
-    const clusters: Cluster[] = [[sortedEvents[0]]]
-    let clusterMaxEnd = sortedEvents[0].end.getTime()
+    const groups: Cluster[] = [[sortedEvents[0]]]
+    let groupMaxEnd = sortedEvents[0].end.getTime()
 
     for (let i = 1; i < sortedEvents.length; i++) {
         const event = sortedEvents[i]
-        if (event.start.getTime() < clusterMaxEnd) {
-            clusters[clusters.length - 1].push(event)
+        if (event.start.getTime() < groupMaxEnd) {
+            groups[groups.length - 1].push(event)
         } else {
-            clusters.push([event])
+            groups.push([event])
         }
-        clusterMaxEnd = Math.max(clusterMaxEnd, event.end.getTime())
+        groupMaxEnd = Math.max(groupMaxEnd, event.end.getTime())
     }
 
-    return clusters
+    return groups
 }
 
 function getClusterStart(cluster: Cluster): number {
@@ -89,7 +89,7 @@ function shiftCluster(cluster: Cluster, newStart: Date): void {
 
 export type FinishedMode = 'none' | 'move' | 'cascade'
 
-export function rescheduleEvents(calendar: Calendar, finishedMode: FinishedMode = 'move'): void {
+export function catchupEvents(calendar: Calendar, finishedMode: FinishedMode = 'move'): void {
     const now = getRoundedNow(5)
     const nowMs = now.getTime()
     const nowRoundedDown = roundDownTo5(new Date())
@@ -120,57 +120,57 @@ export function rescheduleEvents(calendar: Calendar, finishedMode: FinishedMode 
     const shouldMoveFinished = finishedMode !== 'none'
     const hasFinishedAfterNow = shouldMoveFinished && finishedAfterNow.length > 0
 
-    // Build clusters from ALL unfinished events so overlapping events stay together
-    const unfinishedClusters = buildClusters(unfinished)
+    // Build overlap groups from ALL unfinished events so overlapping events stay together
+    const unfinishedGroups = buildOverlapGroups(unfinished)
 
-    // A cluster needs moving if any event in it starts before now
-    const hasPastEvent = (cluster: Cluster) => cluster.some(e => e.start.getTime() < nowMs)
-    const hasUnfinishedToMove = unfinishedClusters.some(hasPastEvent)
+    // A group needs moving if any event in it starts before now
+    const hasPastEvent = (group: Cluster) => group.some(e => e.start.getTime() < nowMs)
+    const hasUnfinishedToMove = unfinishedGroups.some(hasPastEvent)
 
     if (!hasFinishedAfterNow && !hasUnfinishedToMove) return
 
     calendar.pauseRendering()
 
-    // --- Move finished-after-now clusters backwards from now ---
+    // --- Move finished-after-now overlap groups backwards from now ---
     if (hasFinishedAfterNow) {
-        const finishedAfterNowClusters = buildClusters(
+        const finishedAfterNowGroups = buildOverlapGroups(
             finishedAfterNow.sort((a, b) => a.start.getTime() - b.start.getTime())
         )
 
         let endTime = nowRoundedDownMs
 
-        for (let i = finishedAfterNowClusters.length - 1; i >= 0; i--) {
-            const cluster = finishedAfterNowClusters[i]
-            const clusterDuration = getClusterEnd(cluster) - getClusterStart(cluster)
-            let newStartMs = endTime - clusterDuration
+        for (let i = finishedAfterNowGroups.length - 1; i >= 0; i--) {
+            const group = finishedAfterNowGroups[i]
+            const groupDuration = getClusterEnd(group) - getClusterStart(group)
+            let newStartMs = endTime - groupDuration
 
-            if (clusterHasLongEvent(cluster)) {
+            if (clusterHasLongEvent(group)) {
                 newStartMs = roundDownTo5(new Date(newStartMs)).getTime()
             }
 
-            shiftCluster(cluster, new Date(newStartMs))
+            shiftCluster(group, new Date(newStartMs))
             endTime = newStartMs
         }
 
-        // --- Cascade finished-before-now clusters if toggle is on ---
+        // --- Cascade finished-before-now overlap groups if toggle is on ---
         if (finishedMode === 'cascade') {
-            const finishedBeforeNowClusters = buildClusters(
+            const finishedBeforeNowGroups = buildOverlapGroups(
                 finishedBeforeNow.sort((a, b) => a.start.getTime() - b.start.getTime())
             )
 
-            for (let i = finishedBeforeNowClusters.length - 1; i >= 0; i--) {
-                const cluster = finishedBeforeNowClusters[i]
-                const clusterEnd = getClusterEnd(cluster)
+            for (let i = finishedBeforeNowGroups.length - 1; i >= 0; i--) {
+                const group = finishedBeforeNowGroups[i]
+                const groupEnd = getClusterEnd(group)
 
-                if (clusterEnd > endTime) {
-                    const clusterDuration = clusterEnd - getClusterStart(cluster)
-                    let newStartMs = endTime - clusterDuration
+                if (groupEnd > endTime) {
+                    const groupDuration = groupEnd - getClusterStart(group)
+                    let newStartMs = endTime - groupDuration
 
-                    if (clusterHasLongEvent(cluster)) {
+                    if (clusterHasLongEvent(group)) {
                         newStartMs = roundDownTo5(new Date(newStartMs)).getTime()
                     }
 
-                    shiftCluster(cluster, new Date(newStartMs))
+                    shiftCluster(group, new Date(newStartMs))
                     endTime = newStartMs
                 } else {
                     break
@@ -179,44 +179,44 @@ export function rescheduleEvents(calendar: Calendar, finishedMode: FinishedMode 
         }
     }
 
-    // --- Pack unfinished clusters forwards from now (existing logic) ---
+    // --- Pack unfinished overlap groups forwards from now ---
     if (hasUnfinishedToMove) {
         let placementTime = new Date(nowMs)
         let runningEnd = nowMs
 
-        for (const cluster of unfinishedClusters) {
-            const clusterDuration = getClusterEnd(cluster) - getClusterStart(cluster)
+        for (const group of unfinishedGroups) {
+            const groupDuration = getClusterEnd(group) - getClusterStart(group)
 
-            if (hasPastEvent(cluster)) {
-                // Move this cluster to placementTime
-                if (clusterHasLongEvent(cluster)) {
+            if (hasPastEvent(group)) {
+                // Move this group to placementTime
+                if (clusterHasLongEvent(group)) {
                     placementTime = roundUpTo5(placementTime)
                 }
                 const adjustedStart = findPlacementAvoidingSolidPins(
                     placementTime.getTime(),
-                    clusterDuration,
+                    groupDuration,
                     solidPins
                 )
-                shiftCluster(cluster, new Date(adjustedStart))
-                placementTime = new Date(getClusterEnd(cluster))
+                shiftCluster(group, new Date(adjustedStart))
+                placementTime = new Date(getClusterEnd(group))
                 runningEnd = placementTime.getTime()
             } else {
-                // Future cluster — only push if it overlaps with runningEnd
-                const clusterStart = getClusterStart(cluster)
-                if (clusterStart < runningEnd) {
+                // Future group — only push if it overlaps with runningEnd
+                const groupStart = getClusterStart(group)
+                if (groupStart < runningEnd) {
                     let newStart = new Date(runningEnd)
-                    if (clusterHasLongEvent(cluster)) {
+                    if (clusterHasLongEvent(group)) {
                         newStart = roundUpTo5(newStart)
                     }
                     const adjustedStart = findPlacementAvoidingSolidPins(
                         newStart.getTime(),
-                        clusterDuration,
+                        groupDuration,
                         solidPins
                     )
-                    shiftCluster(cluster, new Date(adjustedStart))
-                    runningEnd = getClusterEnd(cluster)
+                    shiftCluster(group, new Date(adjustedStart))
+                    runningEnd = getClusterEnd(group)
                 } else {
-                    runningEnd = Math.max(runningEnd, getClusterEnd(cluster))
+                    runningEnd = Math.max(runningEnd, getClusterEnd(group))
                 }
             }
         }
@@ -225,7 +225,7 @@ export function rescheduleEvents(calendar: Calendar, finishedMode: FinishedMode 
     calendar.resumeRendering()
 }
 
-function buildSoftClusters(sortedEvents: EventApi[]): Cluster[] {
+function buildClusters(sortedEvents: EventApi[]): Cluster[] {
     if (sortedEvents.length === 0) return []
     const FIVE_MIN = 5 * 60 * 1000
     const ONE_MIN = 1 * 60 * 1000
@@ -262,25 +262,25 @@ export function squeezeEvents(calendar: Calendar): void {
         .sort((a, b) => {
             const startDiff = a.start.getTime() - b.start.getTime()
             if (startDiff !== 0) return startDiff
-            // Longer events first so they set the tolerance in buildSoftClusters
+            // Longer events first so they set the tolerance in buildClusters
             const aDur = a.end.getTime() - a.start.getTime()
             const bDur = b.end.getTime() - b.start.getTime()
             return bDur - aDur
         })
 
-    const softClusters = buildSoftClusters(movable)
-    if (softClusters.length === 0) return
+    const clusters = buildClusters(movable)
+    if (clusters.length === 0) return
 
-    const nowGroupIdx = softClusters.findIndex(
+    const nowGroupIdx = clusters.findIndex(
         c => getClusterStart(c) <= nowMs && getClusterEnd(c) >= nowMs
     )
 
     console.debug('squeeze:', {
         now: now.toLocaleTimeString(),
         nowMs,
-        numClusters: softClusters.length,
+        numClusters: clusters.length,
         nowGroupIdx,
-        clusters: softClusters.map((c, i) => ({
+        clusters: clusters.map((c, i) => ({
             i,
             start: new Date(getClusterStart(c)).toLocaleTimeString(),
             end: new Date(getClusterEnd(c)).toLocaleTimeString(),
@@ -292,15 +292,15 @@ export function squeezeEvents(calendar: Calendar): void {
 
     if (nowGroupIdx !== -1) {
         const nextIdx = nowGroupIdx + 1
-        if (nextIdx < softClusters.length) {
-            let newStart = new Date(getClusterEnd(softClusters[nowGroupIdx]))
-            if (clusterHasLongEvent(softClusters[nextIdx])) {
+        if (nextIdx < clusters.length) {
+            let newStart = new Date(getClusterEnd(clusters[nowGroupIdx]))
+            if (clusterHasLongEvent(clusters[nextIdx])) {
                 newStart = roundUpTo5(newStart)
             }
-            shiftCluster(softClusters[nextIdx], newStart)
+            shiftCluster(clusters[nextIdx], newStart)
         }
     } else {
-        const firstAfter = softClusters.find(c => getClusterStart(c) > nowMs)
+        const firstAfter = clusters.find(c => getClusterStart(c) > nowMs)
         if (firstAfter) {
             shiftCluster(firstAfter, now)
         }

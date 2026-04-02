@@ -92,7 +92,7 @@ Pin cycling is handled by `cyclePinType()` in `utils/events.ts`. Visual styling 
 
 ## Catchup & Squeeze
 
-**Catchup** (`rescheduleEvents` in `utils/reschedule.ts`):
+**Catchup** (`catchupEvents` in `utils/reschedule.ts`):
 - Packs unfinished events forward from NOW, finished events backward from NOW
 - Respects solid pins as obstacles (events route around them), ignores ghost pins entirely
 - Finished event handling is configurable: don't move / move / move + cascade (setting in "Show More" menu)
