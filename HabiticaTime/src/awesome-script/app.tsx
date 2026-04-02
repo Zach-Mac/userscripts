@@ -40,6 +40,29 @@ function playNotification() {
 
 GM_addStyle(globalCss)
 
+function scrollToNow() {
+    // scroll window to top of timecalc
+    const timeCalc = document.querySelector('#timecalc')
+    if (timeCalc) timeCalc.scrollIntoView({ behavior: 'smooth' })
+    else console.error('timeCalc not found')
+
+    const now = getRoundedNow(5)
+    const scrollTime = getMinutesAgoString(now, 30, false)
+    state.scrollToTime(scrollTime)
+}
+
+function handleSqueeze() {
+    if (!state.calendar) return
+    squeezeEvents(state.calendar)
+    scrollToNow()
+}
+
+function handleCatchup() {
+    if (!state.calendar) return
+    rescheduleEvents(state.calendar, finishedMode())
+    scrollToNow()
+}
+
 const initCalendar = observe(document.body, () => {
     const dailiesColumn = document.querySelector('.tasks-column.daily')
     if (!dailiesColumn) return false
@@ -82,15 +105,6 @@ const initCalendar = observe(document.body, () => {
         for (const event of state.calendar.getEvents()) {
             console.log('event', event.title, event)
         }
-    }
-    const handleCatchup = () => {
-        if (!state.calendar) return
-        rescheduleEvents(state.calendar, finishedMode())
-        state.scrollToTime?.(getMinutesAgoString(getRoundedNow(5), 30, false))
-    }
-    const handleSqueeze = () => {
-        if (!state.calendar) return
-        squeezeEvents(state.calendar)
     }
 
     function handleMinTimeChange(e: Event) {
@@ -255,26 +269,17 @@ const initTaskTools = observe(document.body, () => {
 })
 
 register('ctrl-shift-space', () => {
-    if (!state.calendar) return
-    rescheduleEvents(state.calendar, finishedMode())
-    state.scrollToTime?.(getMinutesAgoString(getRoundedNow(5), 30, false))
+    handleCatchup()
 })
 
 register('ctrl-shift-s', () => {
-    if (!state.calendar) return
-    squeezeEvents(state.calendar)
+    handleSqueeze()
 })
 
 register('ctrl-space', () => {
     console.debug('pressed ctrl-space')
-    // scroll window to top of timecalc
-    const timeCalc = document.querySelector('#timecalc')
-    if (timeCalc) timeCalc.scrollIntoView({ behavior: 'smooth' })
-    else console.error('timeCalc not found')
 
-    const now = getRoundedNow(5)
-    const scrollTime = getMinutesAgoString(now, 30, false)
-    state.scrollToTime(scrollTime)
+    scrollToNow()
 
     Notification.requestPermission().then(result => {
         console.log(result)

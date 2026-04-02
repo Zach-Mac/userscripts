@@ -225,13 +225,20 @@ export function rescheduleEvents(calendar: Calendar, finishedMode: FinishedMode 
     calendar.resumeRendering()
 }
 
-function buildSoftClusters(sortedEvents: EventApi[], gapMs: number = 5 * 60 * 1000): Cluster[] {
+function buildSoftClusters(sortedEvents: EventApi[]): Cluster[] {
     if (sortedEvents.length === 0) return []
+    const FIVE_MIN = 5 * 60 * 1000
+    const ONE_MIN = 1 * 60 * 1000
     const clusters: Cluster[] = [[sortedEvents[0]]]
     let clusterMaxEnd = sortedEvents[0].end.getTime()
     for (let i = 1; i < sortedEvents.length; i++) {
         const event = sortedEvents[i]
-        if (event.start.getTime() < clusterMaxEnd + gapMs) {
+        const eventDuration = event.end.getTime() - event.start.getTime()
+        const tolerance =
+            eventDuration >= FIVE_MIN
+                ? roundUpTo5(new Date(clusterMaxEnd)).getTime() - clusterMaxEnd
+                : ONE_MIN
+        if (event.start.getTime() <= clusterMaxEnd + tolerance) {
             clusters[clusters.length - 1].push(event)
         } else {
             clusters.push([event])
@@ -244,26 +251,53 @@ function buildSoftClusters(sortedEvents: EventApi[], gapMs: number = 5 * 60 * 10
 export function squeezeEvents(calendar: Calendar): void {
     const now = getRoundedNow(5)
     const nowMs = now.getTime()
-    const allEvents = calendar
-        .getEvents()
-        .filter(e => !isPinned(e))
-        .sort((a, b) => a.start.getTime() - b.start.getTime())
+    const allEvents = calendar.getEvents()
 
-    const softClusters = buildSoftClusters(allEvents)
+    // Deselect all selected events first (prevents groupId move bug)
+    const selected = allEvents.filter(e => e.extendedProps.selected)
+    if (selected.length > 0) deselectEvents(selected)
+
+    const movable = allEvents
+        .filter(e => !isPinned(e))
+        .sort((a, b) => {
+            const startDiff = a.start.getTime() - b.start.getTime()
+            if (startDiff !== 0) return startDiff
+            // Longer events first so they set the tolerance in buildSoftClusters
+            const aDur = a.end.getTime() - a.start.getTime()
+            const bDur = b.end.getTime() - b.start.getTime()
+            return bDur - aDur
+        })
+
+    const softClusters = buildSoftClusters(movable)
     if (softClusters.length === 0) return
 
-    const GAP = 5 * 60 * 1000
     const nowGroupIdx = softClusters.findIndex(
-        c => getClusterStart(c) < nowMs + GAP && getClusterEnd(c) >= nowMs
+        c => getClusterStart(c) <= nowMs && getClusterEnd(c) >= nowMs
     )
+
+    console.debug('squeeze:', {
+        now: now.toLocaleTimeString(),
+        nowMs,
+        numClusters: softClusters.length,
+        nowGroupIdx,
+        clusters: softClusters.map((c, i) => ({
+            i,
+            start: new Date(getClusterStart(c)).toLocaleTimeString(),
+            end: new Date(getClusterEnd(c)).toLocaleTimeString(),
+            events: c.length
+        }))
+    })
 
     calendar.pauseRendering()
 
     if (nowGroupIdx !== -1) {
         const nextIdx = nowGroupIdx + 1
         if (nextIdx < softClusters.length) {
-            const nowGroupEnd = getClusterEnd(softClusters[nowGroupIdx])
-            shiftCluster(softClusters[nextIdx], new Date(nowGroupEnd))
+            let newStart = new Date(getClusterEnd(softClusters[nowGroupIdx]))
+            if (clusterHasLongEvent(softClusters[nextIdx])) {
+                newStart = roundUpTo5(newStart)
+            }
+            shiftCluster(softClusters[nextIdx], newStart)
         }
     } else {
         const firstAfter = softClusters.find(c => getClusterStart(c) > nowMs)
