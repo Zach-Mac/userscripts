@@ -15454,7 +15454,7 @@ function getMinutesAgoString(now, minutes, rounded = true) {
 function getRoundedNow(roundNum) {
   const now = new Date();
   now.setMinutes(Math.ceil(now.getMinutes() / roundNum) * roundNum);
-  now.setSeconds(0);
+  now.setSeconds(0, 0);
   return now;
 }
 function parseTime(timeStr) {
@@ -16862,6 +16862,11 @@ function catchupEvents(calendar, finishedMode = 'move') {
   const nowMs = now.getTime();
   const nowRoundedDown = roundDownTo5(new Date());
   const nowRoundedDownMs = nowRoundedDown.getTime();
+  console.debug('catchup:', {
+    actualNow: new Date().toLocaleTimeString(),
+    roundedUpNow: now.toLocaleTimeString(),
+    roundedDownNow: nowRoundedDown.toLocaleTimeString()
+  });
   const allEvents = calendar.getEvents();
 
   // Deselect all selected events first

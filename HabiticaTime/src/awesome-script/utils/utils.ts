@@ -11,7 +11,7 @@ export function getMinutesAgoString(now: Date, minutes: number, rounded = true) 
 export function getRoundedNow(roundNum: number) {
     const now = new Date()
     now.setMinutes(Math.ceil(now.getMinutes() / roundNum) * roundNum)
-    now.setSeconds(0)
+    now.setSeconds(0, 0)
     return now
 }
 

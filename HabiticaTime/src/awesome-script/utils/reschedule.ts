@@ -95,6 +95,12 @@ export function catchupEvents(calendar: Calendar, finishedMode: FinishedMode = '
     const nowRoundedDown = roundDownTo5(new Date())
     const nowRoundedDownMs = nowRoundedDown.getTime()
 
+    console.debug('catchup:', {
+        actualNow: new Date().toLocaleTimeString(),
+        roundedUpNow: now.toLocaleTimeString(),
+        roundedDownNow: nowRoundedDown.toLocaleTimeString()
+    })
+
     const allEvents = calendar.getEvents()
 
     // Deselect all selected events first
