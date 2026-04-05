@@ -234,17 +234,11 @@ export function catchupEvents(calendar: Calendar, finishedMode: FinishedMode = '
 function buildClusters(sortedEvents: EventApi[]): Cluster[] {
     if (sortedEvents.length === 0) return []
     const FIVE_MIN = 5 * 60 * 1000
-    const ONE_MIN = 1 * 60 * 1000
     const clusters: Cluster[] = [[sortedEvents[0]]]
     let clusterMaxEnd = sortedEvents[0].end.getTime()
     for (let i = 1; i < sortedEvents.length; i++) {
         const event = sortedEvents[i]
-        const eventDuration = event.end.getTime() - event.start.getTime()
-        const tolerance =
-            eventDuration >= FIVE_MIN
-                ? roundUpTo5(new Date(clusterMaxEnd)).getTime() - clusterMaxEnd
-                : ONE_MIN
-        if (event.start.getTime() <= clusterMaxEnd + tolerance) {
+        if (event.start.getTime() <= clusterMaxEnd + FIVE_MIN) {
             clusters[clusters.length - 1].push(event)
         } else {
             clusters.push([event])

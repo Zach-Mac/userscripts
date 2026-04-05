@@ -54,7 +54,6 @@ function scrollToNow() {
 function handleSqueeze() {
     if (!state.calendar) return
     squeezeEvents(state.calendar)
-    scrollToNow()
 }
 
 function handleCatchup() {
