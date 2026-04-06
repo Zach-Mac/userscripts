@@ -238,7 +238,7 @@ function buildClusters(sortedEvents: EventApi[]): Cluster[] {
     let clusterMaxEnd = sortedEvents[0].end.getTime()
     for (let i = 1; i < sortedEvents.length; i++) {
         const event = sortedEvents[i]
-        if (event.start.getTime() <= clusterMaxEnd + FIVE_MIN) {
+        if (event.start.getTime() < clusterMaxEnd + FIVE_MIN) {
             clusters[clusters.length - 1].push(event)
         } else {
             clusters.push([event])

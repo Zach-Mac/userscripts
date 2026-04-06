@@ -18,6 +18,7 @@ import { TaskHighlighter } from './taskHighlighter.jsx'
 import { EventInput } from '@fullcalendar/core'
 import { register } from '@violentmonkey/shortcut'
 import { catchupEvents, squeezeEvents, FinishedMode } from './utils/reschedule.js'
+import { pushUndo, undo, redo, undoCount, redoCount } from './utils/history.js'
 
 const MOBILE_BREAKPOINT_WIDTH = 770
 
@@ -53,11 +54,13 @@ function scrollToNow() {
 
 function handleSqueeze() {
     if (!state.calendar) return
+    pushUndo(state.calendar)
     squeezeEvents(state.calendar)
 }
 
 function handleCatchup() {
     if (!state.calendar) return
+    pushUndo(state.calendar)
     catchupEvents(state.calendar, finishedMode())
     scrollToNow()
 }
@@ -134,30 +137,48 @@ const initCalendar = observe(document.body, () => {
                         Calendar
                     </h2>
                     <div style={{ 'margin-left': 'auto', display: 'flex', 'flex-wrap': 'wrap' }}>
-                        <button class="cal-header-btn" onClick={handleCreateCal}>
-                            Create
+                        <button class="cal-header-btn" onClick={handleCreateCal} title="Create Calendar">
+                            󰃳
                         </button>
-                        <button class="cal-header-btn" onClick={handleDeleteCal}>
-                            Delete
+                        <button class="cal-header-btn" onClick={handleDeleteCal} title="Delete Calendar">
+                            󰧧 
                         </button>
-                        <button class="cal-header-btn" onClick={handleSaveCal}>
-                            Copy
+                        <button class="cal-header-btn" onClick={handleSaveCal} title="Copy to Clipboard">
+                            
                         </button>
-                        <button class="cal-header-btn" onClick={handleLoadCal}>
-                            Load
+                        <button class="cal-header-btn" onClick={handleLoadCal} title="Load from Saved">
+                            󰬥
                         </button>
                         <button
                             class="cal-header-btn"
                             onClick={handleCatchup}
-                            title="Ctrl+Shift+Space"
+                            title="Catchup (Ctrl+Shift+Space)"
                         >
-                            Catchup
+                            󰚰
                         </button>
-                        <button class="cal-header-btn" onClick={handleSqueeze} title="Ctrl+Shift+S">
-                            Squeeze
+                        <button class="cal-header-btn" onClick={handleSqueeze} title="Squeeze (Ctrl+Shift+S)">
+                            󰡍
                         </button>
-                        <button class="cal-header-btn" onClick={() => setShowMore(!showMore())}>
-                            {showMore() ? 'Less' : 'More'}
+                        <button
+                            class="cal-header-btn"
+                            onClick={() => state.calendar && undo(state.calendar)}
+                            disabled={undoCount() === 0}
+                            title="Undo (Ctrl+Z)"
+                            style={{ opacity: undoCount() === 0 ? 0.35 : 1 }}
+                        >
+                            󰕌
+                        </button>
+                        <button
+                            class="cal-header-btn"
+                            onClick={() => state.calendar && redo(state.calendar)}
+                            disabled={redoCount() === 0}
+                            title="Redo (Ctrl+Shift+Z)"
+                            style={{ opacity: redoCount() === 0 ? 0.35 : 1 }}
+                        >
+                            󰑎
+                        </button>
+                        <button class="cal-header-btn" onClick={() => setShowMore(!showMore())} title="Show more">
+                            {showMore() ? '󰅃' : '󰅀'}
                         </button>
                     </div>
                 </div>
@@ -273,6 +294,14 @@ register('ctrl-shift-space', () => {
 
 register('ctrl-shift-s', () => {
     handleSqueeze()
+})
+
+register('ctrl-z', () => {
+    if (state.calendar) undo(state.calendar)
+})
+
+register('ctrl-shift-z', () => {
+    if (state.calendar) redo(state.calendar)
 })
 
 register('ctrl-space', () => {

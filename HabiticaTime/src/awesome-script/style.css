@@ -1,24 +1,45 @@
 /* global css */
 /* Note: might conflict with existing styles if not in shadow DOM */
 
-/* Calendar header buttons — match Habitica's .filter.small-text style */
+@font-face {
+    font-family: 'NerdFont';
+    src: url('https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf')
+        format('truetype');
+    font-display: swap;
+}
+
+.nf-icon {
+    font-family: 'NerdFont', monospace;
+}
+
+/* Calendar header buttons */
 .cal-header-btn {
-    font-size: 12px;
+    font-family: 'NerdFont', monospace;
+    font-size: 18px;
     font-weight: 700;
-    font-style: normal;
-    line-height: 1.33;
+    line-height: 1;
     color: #686274;
-    padding: 0 4px 0 4px;
+    padding: 4px 6px;
     cursor: pointer;
     white-space: nowrap;
     background: none;
-    border: none;
-    border-bottom: 2px solid transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .cal-header-btn:hover {
     color: #4f2a93;
+    background: rgba(79, 42, 147, 0.1);
+    border-color: rgba(79, 42, 147, 0.2);
 }
 .cal-header-btn:active {
     color: #4f2a93;
-    border-bottom-color: #4f2a93;
+    background: rgba(79, 42, 147, 0.18);
+}
+.cal-header-btn:disabled {
+    cursor: default;
+}
+.cal-header-btn:disabled:hover {
+    background: none;
+    border-color: transparent;
 }

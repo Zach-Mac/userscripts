@@ -11,6 +11,7 @@ import { addSelectionStyles, selectEvents, setupSelectionHandlers } from './sele
 import { parseTime, msToHHMMSS, getRoundedNow, getMinutesAgoString, throttle } from './utils'
 import { colors, zoomLevels, state, getHoursInDay, getDayHeight } from '../global'
 import { createEvent, cyclePinType } from './events'
+import { isRestoring, pushUndo } from './history'
 
 export function createCalendar(initialEvents: EventSourceInput): void {
     const calendarEl = document.getElementById('calendar')
@@ -377,6 +378,7 @@ export function createCalendar(initialEvents: EventSourceInput): void {
         allDaySlot: false,
         events: initialEvents,
         eventsSet: events => {
+            if (isRestoring()) return
             console.debug('eventsSet', events)
             localStorage.setItem('events', JSON.stringify(events))
         },
@@ -390,6 +392,7 @@ export function createCalendar(initialEvents: EventSourceInput): void {
                 console.debug('contextMenu', eventId)
 
                 if (confirm(`Delete event "${info.event.title}"?`)) {
+                    pushUndo(calendar)
                     info.event.remove()
                 }
             })
@@ -402,6 +405,7 @@ export function createCalendar(initialEvents: EventSourceInput): void {
             info.el.addEventListener('auxclick', jsEvent => {
                 if (jsEvent.button !== 1) return
                 jsEvent.preventDefault()
+                pushUndo(calendar)
                 const nextPin = cyclePinType(info.event.extendedProps.pinType)
                 info.event.setExtendedProp('pinType', nextPin)
             })
@@ -413,8 +417,12 @@ export function createCalendar(initialEvents: EventSourceInput): void {
             if (info.jsEvent.ctrlKey) return
 
             // Handle left click - toggle finished
+            pushUndo(calendar)
             const finished = info.event.extendedProps.finished
             info.event.setExtendedProp('finished', !finished)
+        },
+        eventDragStart: () => {
+            pushUndo(calendar)
         },
         eventAllow: (dropInfo, draggedEvent) => {
             return !shiftPressed
