@@ -9,9 +9,24 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import { addSelectionStyles, selectEvents, setupSelectionHandlers } from './selection'
 import { parseTime, msToHHMMSS, getRoundedNow, getMinutesAgoString, throttle } from './utils'
-import { colors, zoomLevels, state, getHoursInDay, getDayHeight } from '../global'
+import {
+    colors,
+    zoomLevels,
+    state,
+    getHoursInDay,
+    getDayHeight,
+    focusedEventId,
+    keyboardMode,
+    setKeyboardMode
+} from '../global'
 import { createEvent, cyclePinType } from './events'
 import { isRestoring, pushUndo } from './history'
+import {
+    setupKeyboardHandlers,
+    handleCtrlClick,
+    handleSelectModeClick,
+    clearSelectionAndFocus
+} from './keyboard'
 
 export function createCalendar(initialEvents: EventSourceInput): void {
     const calendarEl = document.getElementById('calendar')
@@ -372,8 +387,10 @@ export function createCalendar(initialEvents: EventSourceInput): void {
             calendar.unselect()
         },
         eventClassNames: info => {
-            if (info.event.extendedProps.pinType === 'ghost') return ['ghost-pin']
-            return []
+            const classes: string[] = []
+            if (info.event.extendedProps.pinType === 'ghost') classes.push('ghost-pin')
+            if (info.event.id === focusedEventId()) classes.push('focused-event')
+            return classes
         },
         allDaySlot: false,
         events: initialEvents,
@@ -414,12 +431,32 @@ export function createCalendar(initialEvents: EventSourceInput): void {
             console.debug('eventClick', info)
 
             if (info.jsEvent.shiftKey) return
-            if (info.jsEvent.ctrlKey) return
 
-            // Handle left click - toggle finished
+            // Ctrl+click: toggle-select in any mode
+            if (info.jsEvent.ctrlKey) {
+                handleCtrlClick(info.event)
+                return
+            }
+
+            // In select/move mode: left click = focus + toggle-select
+            if (keyboardMode() === 'select' || keyboardMode() === 'move') {
+                handleSelectModeClick(info.event)
+                return
+            }
+
+            // Normal mode: toggle finished
             pushUndo(calendar)
             const finished = info.event.extendedProps.finished
             info.event.setExtendedProp('finished', !finished)
+
+            // Immediately update color so the change is visible without waiting for DOM observer
+            if (info.event.extendedProps.customEvent) {
+                const color = !finished
+                    ? colors.finishedEvent.hsl().string()
+                    : colors.customEvent.hsl().string()
+                info.event.setProp('backgroundColor', color)
+                info.event.setProp('borderColor', color)
+            }
         },
         eventDragStart: () => {
             pushUndo(calendar)
@@ -440,6 +477,19 @@ export function createCalendar(initialEvents: EventSourceInput): void {
     calendarEl.style.setProperty('--ghost-opacity', String(state.ghostOpacity))
 
     const cleanupSelectionHandlers = setupSelectionHandlers(calendarEl, calendar)
+    const cleanupKeyboardHandlers = setupKeyboardHandlers()
+
+    // Empty-space click exits keyboard mode
+    calendarEl.addEventListener('click', e => {
+        const target = e.target as HTMLElement
+        if (target.closest('.fc-event')) return
+        if (e.ctrlKey || e.shiftKey) return
+        if (keyboardMode() !== 'normal') {
+            clearSelectionAndFocus()
+            setKeyboardMode('normal')
+        }
+    })
+
     // Override the destroy method to include cleanup
     const resizeObserver = new ResizeObserver(() => calendar.updateSize())
     resizeObserver.observe(wrapperEl)
@@ -448,8 +498,9 @@ export function createCalendar(initialEvents: EventSourceInput): void {
     calendar.destroy = () => {
         console.debug('destroying calendar')
         resizeObserver.disconnect()
-        // Call the cleanup function
+        // Call the cleanup functions
         cleanupSelectionHandlers()
+        cleanupKeyboardHandlers()
         // Call the original destroy method
         originalDestroy()
         // Cleanup the calendarEl

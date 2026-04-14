@@ -11,7 +11,8 @@ import {
     refreshEventColors
 } from './utils/habitica.js'
 import { getMinutesAgoString, getRoundedNow, msToHHMM } from './utils/utils.js'
-import { createSignal } from 'solid-js'
+import { createSignal, Show } from 'solid-js'
+import { keyboardMode, eventFilter, moveSubMode } from './global.js'
 import { TimeCalc } from './timeCalc.jsx'
 import { TaskTools } from './taskTools.jsx'
 import { TaskHighlighter } from './taskHighlighter.jsx'
@@ -123,7 +124,7 @@ const initCalendar = observe(document.body, () => {
     const Wrapper = () => {
         let wrapperEl: HTMLDivElement
         return (
-            <div>
+            <div style={{ position: 'relative' }}>
                 <div style={{ display: 'flex', 'align-items': 'center' }}>
                     <h2
                         style={{
@@ -137,16 +138,32 @@ const initCalendar = observe(document.body, () => {
                         Calendar
                     </h2>
                     <div style={{ 'margin-left': 'auto', display: 'flex', 'flex-wrap': 'wrap' }}>
-                        <button class="cal-header-btn" onClick={handleCreateCal} title="Create Calendar">
+                        <button
+                            class="cal-header-btn"
+                            onClick={handleCreateCal}
+                            title="Create Calendar"
+                        >
                             󰃳
                         </button>
-                        <button class="cal-header-btn" onClick={handleDeleteCal} title="Delete Calendar">
-                            󰧧 
+                        <button
+                            class="cal-header-btn"
+                            onClick={handleDeleteCal}
+                            title="Delete Calendar"
+                        >
+                            󰧧
                         </button>
-                        <button class="cal-header-btn" onClick={handleSaveCal} title="Copy to Clipboard">
+                        <button
+                            class="cal-header-btn"
+                            onClick={handleSaveCal}
+                            title="Copy to Clipboard"
+                        >
                             
                         </button>
-                        <button class="cal-header-btn" onClick={handleLoadCal} title="Load from Saved">
+                        <button
+                            class="cal-header-btn"
+                            onClick={handleLoadCal}
+                            title="Load from Saved"
+                        >
                             󰬥
                         </button>
                         <button
@@ -156,7 +173,11 @@ const initCalendar = observe(document.body, () => {
                         >
                             󰚰
                         </button>
-                        <button class="cal-header-btn" onClick={handleSqueeze} title="Squeeze (Ctrl+Shift+S)">
+                        <button
+                            class="cal-header-btn"
+                            onClick={handleSqueeze}
+                            title="Squeeze (Ctrl+Shift+S)"
+                        >
                             󰡍
                         </button>
                         <button
@@ -177,7 +198,11 @@ const initCalendar = observe(document.body, () => {
                         >
                             󰑎
                         </button>
-                        <button class="cal-header-btn" onClick={() => setShowMore(!showMore())} title="Show more">
+                        <button
+                            class="cal-header-btn"
+                            onClick={() => setShowMore(!showMore())}
+                            title="Show more"
+                        >
                             {showMore() ? '󰅃' : '󰅀'}
                         </button>
                     </div>
@@ -235,6 +260,16 @@ const initCalendar = observe(document.body, () => {
                         ))}
                     </>
                 )}
+
+                <Show when={keyboardMode() !== 'normal'}>
+                    <div class="mode-indicator">
+                        {keyboardMode() === 'select'
+                            ? eventFilter() === 'all'
+                                ? '-- SELECT --'
+                                : `-- SELECT (${eventFilter()}) --`
+                            : `-- MOVE (${moveSubMode()}) --`}
+                    </div>
+                </Show>
 
                 <div
                     id="calendar-wrapper"

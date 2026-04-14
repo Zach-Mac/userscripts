@@ -25,7 +25,7 @@ function _extends() {
   }, _extends.apply(null, arguments);
 }
 
-var css_248z$3 = "@font-face{font-display:swap;font-family:NerdFont;src:url(https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf) format(\"truetype\")}.cal-header-btn,.nf-icon{font-family:NerdFont,monospace}.cal-header-btn{background:none;border:1px solid transparent;border-radius:4px;color:#686274;cursor:pointer;font-size:18px;font-weight:700;line-height:1;padding:4px 6px;transition:background .15s,color .15s,border-color .15s;white-space:nowrap}.cal-header-btn:hover{background:rgba(79,42,147,.1);border-color:rgba(79,42,147,.2);color:#4f2a93}.cal-header-btn:active{background:rgba(79,42,147,.18);color:#4f2a93}.cal-header-btn:disabled{cursor:default}.cal-header-btn:disabled:hover{background:none;border-color:transparent}";
+var css_248z$3 = "@font-face{font-display:swap;font-family:NerdFont;src:url(https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf) format(\"truetype\")}.cal-header-btn,.nf-icon{font-family:NerdFont,monospace}.cal-header-btn{background:none;border:1px solid transparent;border-radius:4px;color:#686274;cursor:pointer;font-size:18px;font-weight:700;line-height:1;padding:4px 6px;transition:background .15s,color .15s,border-color .15s;white-space:nowrap}.cal-header-btn:hover{background:rgba(79,42,147,.1);border-color:rgba(79,42,147,.2);color:#4f2a93}.cal-header-btn:active{background:rgba(79,42,147,.18);color:#4f2a93}.cal-header-btn:disabled{cursor:default}.cal-header-btn:disabled:hover{background:none;border-color:transparent}.focused-event{outline:2px solid #4f2a93;outline-offset:-1px;z-index:2}.mode-indicator{background:rgba(34,17,60,.85);border-radius:3px;color:#fff;font-family:monospace;font-size:12px;font-weight:700;left:0;letter-spacing:.5px;padding:2px 6px;pointer-events:none;position:absolute;z-index:10}";
 
 var n,l$1,u$1,i$1,t,r$1,o,f$1,e$1,c$1={},s=[],a$1=/acit|ex(?:s|g|n|p|$)|rph|grid|ows|mnc|ntw|ine[ch]|zoo|^ord|itera/i;function h(n,l){for(var u in l)n[u]=l[u];return n}function v$1(n){var l=n.parentNode;l&&l.removeChild(n);}function y(l,u,i){var t,r,o,f={};for(o in u)"key"==o?t=u[o]:"ref"==o?r=u[o]:f[o]=u[o];if(arguments.length>2&&(f.children=arguments.length>3?n.call(arguments,2):i),"function"==typeof l&&null!=l.defaultProps)for(o in l.defaultProps)void 0===f[o]&&(f[o]=l.defaultProps[o]);return p(l,f,t,r,null)}function p(n,i,t,r,o){var f={type:n,props:i,key:t,ref:r,__k:null,__:null,__b:0,__e:null,__d:void 0,__c:null,__h:null,constructor:void 0,__v:null==o?++u$1:o};return null==o&&null!=l$1.vnode&&l$1.vnode(f),f}function d(){return {current:null}}function _(n){return n.children}function k$1(n,l,u,i,t){var r;for(r in u)"children"===r||"key"===r||r in l||g$2(n,r,null,u[r],i);for(r in l)t&&"function"!=typeof l[r]||"children"===r||"key"===r||"value"===r||"checked"===r||u[r]===l[r]||g$2(n,r,l[r],u[r],i);}function b$1(n,l,u){"-"===l[0]?n.setProperty(l,null==u?"":u):n[l]=null==u?"":"number"!=typeof u||a$1.test(l)?u:u+"px";}function g$2(n,l,u,i,t){var r;n:if("style"===l)if("string"==typeof u)n.style.cssText=u;else {if("string"==typeof i&&(n.style.cssText=i=""),i)for(l in i)u&&l in u||b$1(n.style,l,"");if(u)for(l in u)i&&u[l]===i[l]||b$1(n.style,l,u[l]);}else if("o"===l[0]&&"n"===l[1])r=l!==(l=l.replace(/Capture$/,"")),l=l.toLowerCase()in n?l.toLowerCase().slice(2):l.slice(2),n.l||(n.l={}),n.l[l+r]=u,u?i||n.addEventListener(l,r?w$2:m$1,r):n.removeEventListener(l,r?w$2:m$1,r);else if("dangerouslySetInnerHTML"!==l){if(t)l=l.replace(/xlink(H|:h)/,"h").replace(/sName$/,"s");else if("width"!==l&&"height"!==l&&"href"!==l&&"list"!==l&&"form"!==l&&"tabIndex"!==l&&"download"!==l&&l in n)try{n[l]=null==u?"":u;break n}catch(n){}"function"==typeof u||(null==u||!1===u&&-1==l.indexOf("-")?n.removeAttribute(l):n.setAttribute(l,u));}}function m$1(n){t=!0;try{return this.l[n.type+!1](l$1.event?l$1.event(n):n)}finally{t=!1;}}function w$2(n){t=!0;try{return this.l[n.type+!0](l$1.event?l$1.event(n):n)}finally{t=!1;}}function x$1(n,l){this.props=n,this.context=l;}function A(n,l){if(null==l)return n.__?A(n.__,n.__.__k.indexOf(n)+1):null;for(var u;l<n.__k.length;l++)if(null!=(u=n.__k[l])&&null!=u.__e)return u.__e;return "function"==typeof n.type?A(n):null}function P$1(n){var l,u;if(null!=(n=n.__)&&null!=n.__c){for(n.__e=n.__c.base=null,l=0;l<n.__k.length;l++)if(null!=(u=n.__k[l])&&null!=u.__e){n.__e=n.__c.base=u.__e;break}return P$1(n)}}function C$1(n){t?setTimeout(n):f$1(n);}function T$1(n){(!n.__d&&(n.__d=!0)&&r$1.push(n)&&!$$1.__r++||o!==l$1.debounceRendering)&&((o=l$1.debounceRendering)||C$1)($$1);}function $$1(){var n,l,u,i,t,o,f,e;for(r$1.sort(function(n,l){return n.__v.__b-l.__v.__b});n=r$1.shift();)n.__d&&(l=r$1.length,i=void 0,t=void 0,f=(o=(u=n).__v).__e,(e=u.__P)&&(i=[],(t=h({},o)).__v=o.__v+1,M(e,o,t,u.__n,void 0!==e.ownerSVGElement,null!=o.__h?[f]:null,i,null==f?A(o):f,o.__h),N(i,o),o.__e!=f&&P$1(o)),r$1.length>l&&r$1.sort(function(n,l){return n.__v.__b-l.__v.__b}));$$1.__r=0;}function H$1(n,l,u,i,t,r,o,f,e,a){var h,v,y,d,k,b,g,m=i&&i.__k||s,w=m.length;for(u.__k=[],h=0;h<l.length;h++)if(null!=(d=u.__k[h]=null==(d=l[h])||"boolean"==typeof d?null:"string"==typeof d||"number"==typeof d||"bigint"==typeof d?p(null,d,null,null,d):Array.isArray(d)?p(_,{children:d},null,null,null):d.__b>0?p(d.type,d.props,d.key,d.ref?d.ref:null,d.__v):d)){if(d.__=u,d.__b=u.__b+1,null===(y=m[h])||y&&d.key==y.key&&d.type===y.type)m[h]=void 0;else for(v=0;v<w;v++){if((y=m[v])&&d.key==y.key&&d.type===y.type){m[v]=void 0;break}y=null;}M(n,d,y=y||c$1,t,r,o,f,e,a),k=d.__e,(v=d.ref)&&y.ref!=v&&(g||(g=[]),y.ref&&g.push(y.ref,null,d),g.push(v,d.__c||k,d)),null!=k?(null==b&&(b=k),"function"==typeof d.type&&d.__k===y.__k?d.__d=e=I$1(d,e,n):e=z$1(n,d,y,m,k,e),"function"==typeof u.type&&(u.__d=e)):e&&y.__e==e&&e.parentNode!=n&&(e=A(y));}for(u.__e=b,h=w;h--;)null!=m[h]&&("function"==typeof u.type&&null!=m[h].__e&&m[h].__e==u.__d&&(u.__d=L$1(i).nextSibling),q(m[h],m[h]));if(g)for(h=0;h<g.length;h++)S(g[h],g[++h],g[++h]);}function I$1(n,l,u){for(var i,t=n.__k,r=0;t&&r<t.length;r++)(i=t[r])&&(i.__=n,l="function"==typeof i.type?I$1(i,l,u):z$1(u,i,i,t,i.__e,l));return l}function j$2(n,l){return l=l||[],null==n||"boolean"==typeof n||(Array.isArray(n)?n.some(function(n){j$2(n,l);}):l.push(n)),l}function z$1(n,l,u,i,t,r){var o,f,e;if(void 0!==l.__d)o=l.__d,l.__d=void 0;else if(null==u||t!=r||null==t.parentNode)n:if(null==r||r.parentNode!==n)n.appendChild(t),o=null;else {for(f=r,e=0;(f=f.nextSibling)&&e<i.length;e+=1)if(f==t)break n;n.insertBefore(t,r),o=r;}return void 0!==o?o:t.nextSibling}function L$1(n){var l,u,i;if(null==n.type||"string"==typeof n.type)return n.__e;if(n.__k)for(l=n.__k.length-1;l>=0;l--)if((u=n.__k[l])&&(i=L$1(u)))return i;return null}function M(n,u,i,t,r,o,f,e,c){var s,a,v,y,p,d,k,b,g,m,w,A,P,C,T,$=u.type;if(void 0!==u.constructor)return null;null!=i.__h&&(c=i.__h,e=u.__e=i.__e,u.__h=null,o=[e]),(s=l$1.__b)&&s(u);try{n:if("function"==typeof $){if(b=u.props,g=(s=$.contextType)&&t[s.__c],m=s?g?g.props.value:s.__:t,i.__c?k=(a=u.__c=i.__c).__=a.__E:("prototype"in $&&$.prototype.render?u.__c=a=new $(b,m):(u.__c=a=new x$1(b,m),a.constructor=$,a.render=B$1),g&&g.sub(a),a.props=b,a.state||(a.state={}),a.context=m,a.__n=t,v=a.__d=!0,a.__h=[],a._sb=[]),null==a.__s&&(a.__s=a.state),null!=$.getDerivedStateFromProps&&(a.__s==a.state&&(a.__s=h({},a.__s)),h(a.__s,$.getDerivedStateFromProps(b,a.__s))),y=a.props,p=a.state,a.__v=u,v)null==$.getDerivedStateFromProps&&null!=a.componentWillMount&&a.componentWillMount(),null!=a.componentDidMount&&a.__h.push(a.componentDidMount);else {if(null==$.getDerivedStateFromProps&&b!==y&&null!=a.componentWillReceiveProps&&a.componentWillReceiveProps(b,m),!a.__e&&null!=a.shouldComponentUpdate&&!1===a.shouldComponentUpdate(b,a.__s,m)||u.__v===i.__v){for(u.__v!==i.__v&&(a.props=b,a.state=a.__s,a.__d=!1),u.__e=i.__e,u.__k=i.__k,u.__k.forEach(function(n){n&&(n.__=u);}),w=0;w<a._sb.length;w++)a.__h.push(a._sb[w]);a._sb=[],a.__h.length&&f.push(a);break n}null!=a.componentWillUpdate&&a.componentWillUpdate(b,a.__s,m),null!=a.componentDidUpdate&&a.__h.push(function(){a.componentDidUpdate(y,p,d);});}if(a.context=m,a.props=b,a.__P=n,A=l$1.__r,P=0,"prototype"in $&&$.prototype.render){for(a.state=a.__s,a.__d=!1,A&&A(u),s=a.render(a.props,a.state,a.context),C=0;C<a._sb.length;C++)a.__h.push(a._sb[C]);a._sb=[];}else do{a.__d=!1,A&&A(u),s=a.render(a.props,a.state,a.context),a.state=a.__s;}while(a.__d&&++P<25);a.state=a.__s,null!=a.getChildContext&&(t=h(h({},t),a.getChildContext())),v||null==a.getSnapshotBeforeUpdate||(d=a.getSnapshotBeforeUpdate(y,p)),T=null!=s&&s.type===_&&null==s.key?s.props.children:s,H$1(n,Array.isArray(T)?T:[T],u,i,t,r,o,f,e,c),a.base=u.__e,u.__h=null,a.__h.length&&f.push(a),k&&(a.__E=a.__=null),a.__e=!1;}else null==o&&u.__v===i.__v?(u.__k=i.__k,u.__e=i.__e):u.__e=O(i.__e,u,i,t,r,o,f,c);(s=l$1.diffed)&&s(u);}catch(n){u.__v=null,(c||null!=o)&&(u.__e=e,u.__h=!!c,o[o.indexOf(e)]=null),l$1.__e(n,u,i);}}function N(n,u){l$1.__c&&l$1.__c(u,n),n.some(function(u){try{n=u.__h,u.__h=[],n.some(function(n){n.call(u);});}catch(n){l$1.__e(n,u.__v);}});}function O(l,u,i,t,r,o,f,e){var s,a,h,y=i.props,p=u.props,d=u.type,_=0;if("svg"===d&&(r=!0),null!=o)for(;_<o.length;_++)if((s=o[_])&&"setAttribute"in s==!!d&&(d?s.localName===d:3===s.nodeType)){l=s,o[_]=null;break}if(null==l){if(null===d)return document.createTextNode(p);l=r?document.createElementNS("http://www.w3.org/2000/svg",d):document.createElement(d,p.is&&p),o=null,e=!1;}if(null===d)y===p||e&&l.data===p||(l.data=p);else {if(o=o&&n.call(l.childNodes),a=(y=i.props||c$1).dangerouslySetInnerHTML,h=p.dangerouslySetInnerHTML,!e){if(null!=o)for(y={},_=0;_<l.attributes.length;_++)y[l.attributes[_].name]=l.attributes[_].value;(h||a)&&(h&&(a&&h.__html==a.__html||h.__html===l.innerHTML)||(l.innerHTML=h&&h.__html||""));}if(k$1(l,p,y,r,e),h)u.__k=[];else if(_=u.props.children,H$1(l,Array.isArray(_)?_:[_],u,i,t,r&&"foreignObject"!==d,o,f,o?o[0]:i.__k&&A(i,0),e),null!=o)for(_=o.length;_--;)null!=o[_]&&v$1(o[_]);e||("value"in p&&void 0!==(_=p.value)&&(_!==l.value||"progress"===d&&!_||"option"===d&&_!==y.value)&&g$2(l,"value",_,y.value,!1),"checked"in p&&void 0!==(_=p.checked)&&_!==l.checked&&g$2(l,"checked",_,y.checked,!1));}return l}function S(n,u,i){try{"function"==typeof n?n(u):n.current=u;}catch(n){l$1.__e(n,i);}}function q(n,u,i){var t,r;if(l$1.unmount&&l$1.unmount(n),(t=n.ref)&&(t.current&&t.current!==n.__e||S(t,null,u)),null!=(t=n.__c)){if(t.componentWillUnmount)try{t.componentWillUnmount();}catch(n){l$1.__e(n,u);}t.base=t.__P=null,n.__c=void 0;}if(t=n.__k)for(r=0;r<t.length;r++)t[r]&&q(t[r],u,i||"function"!=typeof n.type);i||null==n.__e||v$1(n.__e),n.__=n.__e=n.__d=void 0;}function B$1(n,l,u){return this.constructor(n,u)}function D$1(u,i,t){var r,o,f;l$1.__&&l$1.__(u,i),o=(r="function"==typeof t)?null:i.__k,f=[],M(i,u=(!r&&t||i).__k=y(_,null,[u]),o||c$1,c$1,void 0!==i.ownerSVGElement,!r&&t?[t]:o?null:i.firstChild?n.call(i.childNodes):null,f,!r&&t?t:o?o.__e:i.firstChild,r),N(f,u);}function G$1(n,l){var u={__c:l="__cC"+e$1++,__:n,Consumer:function(n,l){return n.children(l)},Provider:function(n){var u,i;return this.getChildContext||(u=[],(i={})[l]=this,this.getChildContext=function(){return i},this.shouldComponentUpdate=function(n){this.props.value!==n.value&&u.some(function(n){n.__e=!0,T$1(n);});},this.sub=function(n){u.push(n);var l=n.componentWillUnmount;n.componentWillUnmount=function(){u.splice(u.indexOf(n),1),l&&l.call(n);};}),n.children}};return u.Provider.__=u.Consumer.contextType=u}n=s.slice,l$1={__e:function(n,l,u,i){for(var t,r,o;l=l.__;)if((t=l.__c)&&!t.__)try{if((r=t.constructor)&&null!=r.getDerivedStateFromError&&(t.setState(r.getDerivedStateFromError(n)),o=t.__d),null!=t.componentDidCatch&&(t.componentDidCatch(n,i||{}),o=t.__d),o)return t.__E=t}catch(l){n=l;}throw n}},u$1=0,i$1=function(n){return null!=n&&void 0===n.constructor},t=!1,x$1.prototype.setState=function(n,l){var u;u=null!=this.__s&&this.__s!==this.state?this.__s:this.__s=h({},this.state),"function"==typeof n&&(n=n(h({},u),this.props)),n&&h(u,n),null!=n&&this.__v&&(l&&this._sb.push(l),T$1(this));},x$1.prototype.forceUpdate=function(n){this.__v&&(this.__e=!0,n&&this.__h.push(n),T$1(this));},x$1.prototype.render=_,r$1=[],f$1="function"==typeof Promise?Promise.prototype.then.bind(Promise.resolve()):setTimeout,$$1.__r=0,e$1=0;
 
@@ -15160,6 +15160,10 @@ var color = Color;
 var Color$1 = /*@__PURE__*/getDefaultExportFromCjs(color);
 
 var _localStorage$getItem;
+const [keyboardMode, setKeyboardMode] = solidJs.createSignal('normal');
+const [moveSubMode, setMoveSubMode] = solidJs.createSignal('push');
+const [eventFilter, setEventFilter] = solidJs.createSignal('all');
+const [focusedEventId, setFocusedEventId] = solidJs.createSignal(null);
 const state = {
   currZoomLevel: 2,
   calendar: null,
@@ -15587,6 +15591,822 @@ function redo(calendar) {
   updateCounts();
 }
 
+function isFinished(event) {
+  var _event$extendedProps$;
+  const finishedColor = colors.finishedEvent.hsl().string();
+  if (event.backgroundColor === finishedColor) return true;
+  if (((_event$extendedProps$ = event.extendedProps.original) == null ? void 0 : _event$extendedProps$.backgroundColor) === finishedColor) return true;
+  return false;
+}
+function isPinned(event) {
+  return event.extendedProps.pinType === 'solid' || event.extendedProps.pinType === 'ghost';
+}
+function findPlacementAvoidingSolidPins(proposedStart, duration, solidPins) {
+  let start = proposedStart;
+  let end = start + duration;
+  for (const pin of solidPins) {
+    if (end <= pin.start || start >= pin.end) continue;
+    start = pin.end;
+    end = start + duration;
+  }
+  return start;
+}
+function buildOverlapGroups(sortedEvents) {
+  if (sortedEvents.length === 0) return [];
+  const groups = [[sortedEvents[0]]];
+  let groupMaxEnd = sortedEvents[0].end.getTime();
+  for (let i = 1; i < sortedEvents.length; i++) {
+    const event = sortedEvents[i];
+    if (event.start.getTime() < groupMaxEnd) {
+      groups[groups.length - 1].push(event);
+    } else {
+      groups.push([event]);
+    }
+    groupMaxEnd = Math.max(groupMaxEnd, event.end.getTime());
+  }
+  return groups;
+}
+function getClusterStart(cluster) {
+  return Math.min(...cluster.map(e => e.start.getTime()));
+}
+function getClusterEnd(cluster) {
+  return Math.max(...cluster.map(e => e.end.getTime()));
+}
+function roundUpTo5(date) {
+  const ms = date.getTime();
+  const fiveMin = 5 * 60 * 1000;
+  const rounded = Math.ceil(ms / fiveMin) * fiveMin;
+  return new Date(rounded);
+}
+function roundDownTo5(date) {
+  const ms = date.getTime();
+  const fiveMin = 5 * 60 * 1000;
+  const rounded = Math.floor(ms / fiveMin) * fiveMin;
+  return new Date(rounded);
+}
+function clusterHasLongEvent(cluster) {
+  return cluster.some(e => e.end.getTime() - e.start.getTime() >= 5 * 60 * 1000);
+}
+function shiftCluster(cluster, newStart) {
+  const oldStart = getClusterStart(cluster);
+  const offset = newStart.getTime() - oldStart;
+  for (const event of cluster) {
+    const newEventStart = new Date(event.start.getTime() + offset);
+    const newEventEnd = new Date(event.end.getTime() + offset);
+    event.setDates(newEventStart, newEventEnd);
+  }
+}
+function catchupEvents(calendar, finishedMode = 'move') {
+  const now = getRoundedNow(5);
+  const nowMs = now.getTime();
+  const nowRoundedDown = roundDownTo5(new Date());
+  const nowRoundedDownMs = nowRoundedDown.getTime();
+  console.debug('catchup:', {
+    actualNow: new Date().toLocaleTimeString(),
+    roundedUpNow: now.toLocaleTimeString(),
+    roundedDownNow: nowRoundedDown.toLocaleTimeString()
+  });
+  const allEvents = calendar.getEvents();
+
+  // Deselect all selected events first
+  const selected = allEvents.filter(e => e.extendedProps.selected);
+  if (selected.length > 0) deselectEvents(selected);
+
+  // Separate into finished and unfinished (excluding pinned events)
+  const finished = allEvents.filter(e => isFinished(e) && !isPinned(e)).sort((a, b) => a.start.getTime() - b.start.getTime());
+  const unfinished = allEvents.filter(e => !isFinished(e) && !isPinned(e)).sort((a, b) => a.start.getTime() - b.start.getTime());
+
+  // Collect solid pins as obstacles for forward packing
+  const solidPins = allEvents.filter(e => e.extendedProps.pinType === 'solid').map(e => ({
+    start: e.start.getTime(),
+    end: e.end.getTime()
+  })).sort((a, b) => a.start - b.start);
+  const finishedAfterNow = finished.filter(e => e.end.getTime() > nowRoundedDownMs);
+  const finishedBeforeNow = finished.filter(e => e.end.getTime() <= nowRoundedDownMs);
+  const shouldMoveFinished = finishedMode !== 'none';
+  const hasFinishedAfterNow = shouldMoveFinished && finishedAfterNow.length > 0;
+
+  // Build overlap groups from ALL unfinished events so overlapping events stay together
+  const unfinishedGroups = buildOverlapGroups(unfinished);
+
+  // A group needs moving if any event in it starts before now
+  const hasPastEvent = group => group.some(e => e.start.getTime() < nowMs);
+  const hasUnfinishedToMove = unfinishedGroups.some(hasPastEvent);
+  if (!hasFinishedAfterNow && !hasUnfinishedToMove) return;
+  calendar.pauseRendering();
+
+  // --- Move finished-after-now overlap groups backwards from now ---
+  if (hasFinishedAfterNow) {
+    const finishedAfterNowGroups = buildOverlapGroups(finishedAfterNow.sort((a, b) => a.start.getTime() - b.start.getTime()));
+    let endTime = nowRoundedDownMs;
+    for (let i = finishedAfterNowGroups.length - 1; i >= 0; i--) {
+      const group = finishedAfterNowGroups[i];
+      const groupDuration = getClusterEnd(group) - getClusterStart(group);
+      let newStartMs = endTime - groupDuration;
+      if (clusterHasLongEvent(group)) {
+        newStartMs = roundDownTo5(new Date(newStartMs)).getTime();
+      }
+      shiftCluster(group, new Date(newStartMs));
+      endTime = newStartMs;
+    }
+
+    // --- Cascade finished-before-now overlap groups if toggle is on ---
+    if (finishedMode === 'cascade') {
+      const finishedBeforeNowGroups = buildOverlapGroups(finishedBeforeNow.sort((a, b) => a.start.getTime() - b.start.getTime()));
+      for (let i = finishedBeforeNowGroups.length - 1; i >= 0; i--) {
+        const group = finishedBeforeNowGroups[i];
+        const groupEnd = getClusterEnd(group);
+        if (groupEnd > endTime) {
+          const groupDuration = groupEnd - getClusterStart(group);
+          let newStartMs = endTime - groupDuration;
+          if (clusterHasLongEvent(group)) {
+            newStartMs = roundDownTo5(new Date(newStartMs)).getTime();
+          }
+          shiftCluster(group, new Date(newStartMs));
+          endTime = newStartMs;
+        } else {
+          break;
+        }
+      }
+    }
+  }
+
+  // --- Pack unfinished overlap groups forwards from now ---
+  if (hasUnfinishedToMove) {
+    let placementTime = new Date(nowMs);
+    let runningEnd = nowMs;
+    for (const group of unfinishedGroups) {
+      const groupDuration = getClusterEnd(group) - getClusterStart(group);
+      if (hasPastEvent(group)) {
+        // Move this group to placementTime
+        if (clusterHasLongEvent(group)) {
+          placementTime = roundUpTo5(placementTime);
+        }
+        const adjustedStart = findPlacementAvoidingSolidPins(placementTime.getTime(), groupDuration, solidPins);
+        shiftCluster(group, new Date(adjustedStart));
+        placementTime = new Date(getClusterEnd(group));
+        runningEnd = placementTime.getTime();
+      } else {
+        // Future group — only push if it overlaps with runningEnd
+        const groupStart = getClusterStart(group);
+        if (groupStart < runningEnd) {
+          let newStart = new Date(runningEnd);
+          if (clusterHasLongEvent(group)) {
+            newStart = roundUpTo5(newStart);
+          }
+          const adjustedStart = findPlacementAvoidingSolidPins(newStart.getTime(), groupDuration, solidPins);
+          shiftCluster(group, new Date(adjustedStart));
+          runningEnd = getClusterEnd(group);
+        } else {
+          runningEnd = Math.max(runningEnd, getClusterEnd(group));
+        }
+      }
+    }
+  }
+  calendar.resumeRendering();
+}
+function buildClusters(sortedEvents) {
+  if (sortedEvents.length === 0) return [];
+  const FIVE_MIN = 5 * 60 * 1000;
+  const clusters = [[sortedEvents[0]]];
+  let clusterMaxEnd = sortedEvents[0].end.getTime();
+  for (let i = 1; i < sortedEvents.length; i++) {
+    const event = sortedEvents[i];
+    if (event.start.getTime() < clusterMaxEnd + FIVE_MIN) {
+      clusters[clusters.length - 1].push(event);
+    } else {
+      clusters.push([event]);
+    }
+    clusterMaxEnd = Math.max(clusterMaxEnd, event.end.getTime());
+  }
+  return clusters;
+}
+function squeezeEvents(calendar) {
+  const now = getRoundedNow(5);
+  const nowMs = now.getTime();
+  const allEvents = calendar.getEvents();
+
+  // Deselect all selected events first (prevents groupId move bug)
+  const selected = allEvents.filter(e => e.extendedProps.selected);
+  if (selected.length > 0) deselectEvents(selected);
+  const movable = allEvents.filter(e => !isPinned(e)).sort((a, b) => {
+    const startDiff = a.start.getTime() - b.start.getTime();
+    if (startDiff !== 0) return startDiff;
+    // Longer events first so they set the tolerance in buildClusters
+    const aDur = a.end.getTime() - a.start.getTime();
+    const bDur = b.end.getTime() - b.start.getTime();
+    return bDur - aDur;
+  });
+  const clusters = buildClusters(movable);
+  if (clusters.length === 0) return;
+  const nowGroupIdx = clusters.findIndex(c => getClusterStart(c) <= nowMs && getClusterEnd(c) >= nowMs);
+  console.debug('squeeze:', {
+    now: now.toLocaleTimeString(),
+    nowMs,
+    numClusters: clusters.length,
+    nowGroupIdx,
+    clusters: clusters.map((c, i) => ({
+      i,
+      start: new Date(getClusterStart(c)).toLocaleTimeString(),
+      end: new Date(getClusterEnd(c)).toLocaleTimeString(),
+      events: c.length
+    }))
+  });
+  calendar.pauseRendering();
+  if (nowGroupIdx !== -1) {
+    const nextIdx = nowGroupIdx + 1;
+    if (nextIdx < clusters.length) {
+      let newStart = new Date(getClusterEnd(clusters[nowGroupIdx]));
+      if (clusterHasLongEvent(clusters[nextIdx])) {
+        newStart = roundUpTo5(newStart);
+      }
+      shiftCluster(clusters[nextIdx], newStart);
+    }
+  } else {
+    const firstAfter = clusters.find(c => getClusterStart(c) > nowMs);
+    if (firstAfter) {
+      shiftCluster(firstAfter, now);
+    }
+  }
+  calendar.resumeRendering();
+}
+
+// --- Sorted event helpers ---
+
+function getSortedEvents() {
+  if (!state.calendar) return [];
+  return state.calendar.getEvents().sort((a, b) => a.start.getTime() - b.start.getTime());
+}
+function getFilteredEvents(events) {
+  const filter = eventFilter();
+  if (filter === 'all') return events;
+  if (filter === 'unfinished') return events.filter(e => !isFinished(e));
+  return events.filter(e => isFinished(e));
+}
+
+// --- Focus management ---
+
+function focusEvent(eventId) {
+  setFocusedEventId(eventId);
+  if (state.calendar) state.calendar.render();
+  if (eventId) {
+    const el = document.querySelector(`[data-event-id="${eventId}"]`);
+    el == null || el.scrollIntoView({
+      block: 'nearest',
+      behavior: 'smooth'
+    });
+  }
+}
+function findClosestEventToNow(events) {
+  if (events.length === 0) return null;
+  const now = Date.now();
+  let closest = events[0];
+  let closestDist = Math.abs(closest.start.getTime() - now);
+  for (const event of events) {
+    const dist = Math.abs(event.start.getTime() - now);
+    if (dist < closestDist) {
+      closest = event;
+      closestDist = dist;
+    }
+  }
+  return closest;
+}
+function moveFocus(direction) {
+  const sorted = getSortedEvents();
+  const filtered = getFilteredEvents(sorted);
+  if (filtered.length === 0) return;
+  const currentId = focusedEventId();
+  const currentIndex = filtered.findIndex(e => e.id === currentId);
+  let newIndex;
+  if (currentIndex === -1) {
+    // Focused event was filtered out — find nearest in direction
+    const closest = findClosestEventToNow(filtered);
+    newIndex = closest ? filtered.indexOf(closest) : 0;
+  } else {
+    newIndex = Math.max(0, Math.min(filtered.length - 1, currentIndex + direction));
+  }
+  focusEvent(filtered[newIndex].id);
+}
+function jumpFocus(position) {
+  const sorted = getSortedEvents();
+  const filtered = getFilteredEvents(sorted);
+  if (filtered.length === 0) return;
+  const event = position === 'first' ? filtered[0] : filtered[filtered.length - 1];
+  focusEvent(event.id);
+}
+
+// --- Selection management ---
+
+let rangeAnchorId = null;
+function getSelectedEvents() {
+  if (!state.calendar) return [];
+  return state.calendar.getEvents().filter(e => e.extendedProps.selected);
+}
+function toggleSelectFocused() {
+  if (!state.calendar) return;
+  const id = focusedEventId();
+  if (!id) return;
+  const event = state.calendar.getEventById(id);
+  if (!event) return;
+  state.calendar.pauseRendering();
+  if (event.extendedProps.selected) {
+    deselectEvents([event]);
+  } else {
+    selectEvents([event]);
+    if (!rangeAnchorId) rangeAnchorId = id;
+  }
+  state.calendar.resumeRendering();
+}
+function rangeSelect(direction) {
+  if (!state.calendar) return;
+  const sorted = getSortedEvents();
+  const filtered = getFilteredEvents(sorted);
+  if (filtered.length === 0) return;
+
+  // Move focus first
+  moveFocus(direction);
+  const focusId = focusedEventId();
+  if (!focusId) return;
+
+  // Determine anchor
+  if (!rangeAnchorId) rangeAnchorId = focusId;
+  const anchorIndex = filtered.findIndex(e => e.id === rangeAnchorId);
+  const focusIndex = filtered.findIndex(e => e.id === focusId);
+  if (anchorIndex === -1 || focusIndex === -1) return;
+  const start = Math.min(anchorIndex, focusIndex);
+  const end = Math.max(anchorIndex, focusIndex);
+  const inRange = new Set(filtered.slice(start, end + 1).map(e => e.id));
+  state.calendar.pauseRendering();
+  // Select events in range that aren't selected
+  const toSelect = filtered.slice(start, end + 1).filter(e => !e.extendedProps.selected);
+  if (toSelect.length > 0) selectEvents(toSelect);
+  // Deselect events outside range that are selected
+  const toDeselect = filtered.filter(e => e.extendedProps.selected && !inRange.has(e.id));
+  if (toDeselect.length > 0) deselectEvents(toDeselect);
+  state.calendar.resumeRendering();
+}
+function handleCtrlClick(event) {
+  if (!state.calendar) return;
+  state.calendar.pauseRendering();
+  if (event.extendedProps.selected) {
+    deselectEvents([event]);
+  } else {
+    selectEvents([event]);
+  }
+  state.calendar.resumeRendering();
+}
+function handleSelectModeClick(event) {
+  focusEvent(event.id);
+  toggleSelectFocused();
+}
+function clearSelection() {
+  if (!state.calendar) return;
+  const selected = getSelectedEvents();
+  if (selected.length > 0) {
+    state.calendar.pauseRendering();
+    deselectEvents(selected);
+    state.calendar.resumeRendering();
+  }
+  rangeAnchorId = null;
+}
+function clearSelectionAndFocus() {
+  clearSelection();
+  focusEvent(null);
+  setEventFilter('all');
+}
+
+// --- Filter management ---
+
+function handleFilterChange(filter) {
+  setEventFilter(filter);
+  // Re-validate focus
+  const sorted = getSortedEvents();
+  const filtered = getFilteredEvents(sorted);
+  const currentId = focusedEventId();
+  if (currentId && filtered.some(e => e.id === currentId)) return; // still valid
+  // Focus nearest visible event
+  if (filtered.length === 0) {
+    focusEvent(null);
+  } else {
+    const closest = findClosestEventToNow(filtered);
+    focusEvent(closest ? closest.id : filtered[0].id);
+  }
+}
+
+// --- Ensure selection (select focused if nothing selected) ---
+
+function ensureSelection() {
+  if (getSelectedEvents().length > 0) return true;
+  toggleSelectFocused();
+  return getSelectedEvents().length > 0;
+}
+
+// --- Delete selected events ---
+
+function deleteSelectedEvents() {
+  if (!state.calendar) return;
+  if (!ensureSelection()) return;
+  const selected = getSelectedEvents();
+  const names = selected.map(e => e.title).join(', ');
+  const msg = selected.length === 1 ? `Delete event "${selected[0].title}"?` : `Delete ${selected.length} events (${names})?`;
+  if (confirm(msg)) {
+    pushUndo(state.calendar);
+    for (const event of selected) {
+      event.remove();
+    }
+  }
+}
+
+// --- Enter move mode (select focused if nothing selected) ---
+
+function enterMoveMode(subMode) {
+  if (!ensureSelection()) return;
+  setKeyboardMode('move');
+  setMoveSubMode(subMode);
+}
+
+// --- Move helpers ---
+
+const FIVE_MIN = 5 * 60 * 1000;
+function getSelectionBlock() {
+  const events = getSelectedEvents().sort((a, b) => a.start.getTime() - b.start.getTime());
+  if (events.length === 0) return null;
+  const blockStart = Math.min(...events.map(e => e.start.getTime()));
+  const blockEnd = Math.max(...events.map(e => e.end.getTime()));
+  return {
+    events,
+    blockStart,
+    blockEnd
+  };
+}
+function getCalendarBounds() {
+  const cal = state.calendar;
+  const minStr = cal.getOption('slotMinTime').toString();
+  const maxStr = cal.getOption('slotMaxTime').toString();
+  // parseTime returns ms-since-midnight; convert to epoch timestamps for today
+  const midnight = new Date();
+  midnight.setHours(0, 0, 0, 0);
+  const base = midnight.getTime();
+  return {
+    minMs: base + parseTime(minStr),
+    maxMs: base + parseTime(maxStr)
+  };
+}
+function shiftEvents(events, offsetMs) {
+  for (const event of events) {
+    event.setDates(new Date(event.start.getTime() + offsetMs), new Date(event.end.getTime() + offsetMs));
+  }
+}
+
+// --- Push mode ---
+
+function movePush(direction, overlap) {
+  if (!state.calendar) return;
+  const block = getSelectionBlock();
+  if (!block) return;
+  const calendar = state.calendar;
+  const offset = direction * FIVE_MIN;
+  const bounds = getCalendarBounds();
+  const newBlockStart = block.blockStart + offset;
+  const newBlockEnd = block.blockEnd + offset;
+
+  // Boundary check
+  if (newBlockStart < bounds.minMs || newBlockEnd > bounds.maxMs) return;
+  pushUndo(calendar);
+  calendar.pauseRendering();
+  if (overlap) {
+    shiftEvents(block.events, offset);
+    calendar.resumeRendering();
+    return;
+  }
+
+  // Get non-selected events for collision detection
+  const selectedIds = new Set(block.events.map(e => e.id));
+  const others = getSortedEvents().filter(e => !selectedIds.has(e.id));
+
+  // Check for solid pin collision in the path of movement
+  const solidPinHit = others.find(e => {
+    if (e.extendedProps.pinType !== 'solid') return false;
+    const eStart = e.start.getTime();
+    const eEnd = e.end.getTime();
+    return eStart < newBlockEnd && eEnd > newBlockStart;
+  });
+  if (solidPinHit) {
+    // Jump to other side of pin
+    const blockDuration = block.blockEnd - block.blockStart;
+    let jumpStart;
+    if (direction === 1) {
+      jumpStart = solidPinHit.end.getTime();
+    } else {
+      jumpStart = solidPinHit.start.getTime() - blockDuration;
+    }
+    const jumpEnd = jumpStart + blockDuration;
+    if (jumpStart < bounds.minMs || jumpEnd > bounds.maxMs) {
+      calendar.resumeRendering();
+      undo(calendar);
+      return;
+    }
+    shiftEvents(block.events, jumpStart - block.blockStart);
+    calendar.resumeRendering();
+    return;
+  }
+
+  // Move the selected block
+  shiftEvents(block.events, offset);
+
+  // Wavefront push: sweep in direction of movement
+  const pushable = others.filter(e => e.extendedProps.pinType !== 'ghost');
+  if (direction === 1) {
+    // Sort by start ascending for forward sweep
+    pushable.sort((a, b) => a.start.getTime() - b.start.getTime());
+    let wavefront = newBlockEnd;
+    for (const event of pushable) {
+      const eStart = event.start.getTime();
+      const eEnd = event.end.getTime();
+      if (eStart < wavefront && eEnd > newBlockStart) {
+        if (event.extendedProps.pinType === 'solid') {
+          // Chain hit a solid pin — abort
+          calendar.resumeRendering();
+          undo(calendar);
+          return;
+        }
+        const pushAmount = wavefront - eStart;
+        const newEnd = eEnd + pushAmount;
+        if (newEnd > bounds.maxMs) {
+          calendar.resumeRendering();
+          undo(calendar);
+          return;
+        }
+        event.setDates(new Date(eStart + pushAmount), new Date(newEnd));
+        wavefront = newEnd;
+      }
+    }
+  } else {
+    // Sort by end descending for backward sweep
+    pushable.sort((a, b) => b.end.getTime() - a.end.getTime());
+    let wavefront = newBlockStart;
+    for (const event of pushable) {
+      const eStart = event.start.getTime();
+      const eEnd = event.end.getTime();
+      if (eEnd > wavefront && eStart < newBlockEnd) {
+        if (event.extendedProps.pinType === 'solid') {
+          calendar.resumeRendering();
+          undo(calendar);
+          return;
+        }
+        const pushAmount = eEnd - wavefront;
+        const newStart = eStart - pushAmount;
+        if (newStart < bounds.minMs) {
+          calendar.resumeRendering();
+          undo(calendar);
+          return;
+        }
+        event.setDates(new Date(newStart), new Date(eEnd - pushAmount));
+        wavefront = newStart;
+      }
+    }
+  }
+  calendar.resumeRendering();
+}
+
+// --- Swap/Jump mode ---
+
+function moveSwap(direction) {
+  if (!state.calendar) return;
+  const block = getSelectionBlock();
+  if (!block) return;
+  const calendar = state.calendar;
+  const bounds = getCalendarBounds();
+  const blockDuration = block.blockEnd - block.blockStart;
+
+  // Get non-selected, non-ghost events sorted chronologically
+  const selectedIds = new Set(block.events.map(e => e.id));
+  const others = getSortedEvents().filter(e => !selectedIds.has(e.id)).filter(e => e.extendedProps.pinType !== 'ghost');
+
+  // Find neighbor in direction
+  let neighbor = null;
+  if (direction === 1) {
+    for (const e of others.sort((a, b) => a.start.getTime() - b.start.getTime())) {
+      if (e.start.getTime() >= block.blockEnd) {
+        if (e.extendedProps.pinType === 'solid') continue;
+        neighbor = e;
+        break;
+      }
+    }
+  } else {
+    for (const e of others.sort((a, b) => b.end.getTime() - a.end.getTime())) {
+      if (e.end.getTime() <= block.blockStart) {
+        if (e.extendedProps.pinType === 'solid') continue;
+        neighbor = e;
+        break;
+      }
+    }
+  }
+  if (!neighbor) return;
+  pushUndo(calendar);
+  calendar.pauseRendering();
+
+  // Compute gap
+  const gap = direction === 1 ? neighbor.start.getTime() - block.blockEnd : block.blockStart - neighbor.end.getTime();
+  if (gap >= FIVE_MIN) {
+    // Jump: close the gap, become adjacent to neighbor
+    let newBlockStart;
+    if (direction === 1) {
+      newBlockStart = neighbor.start.getTime() - blockDuration;
+    } else {
+      newBlockStart = neighbor.end.getTime();
+    }
+    const newBlockEnd = newBlockStart + blockDuration;
+    if (newBlockStart < bounds.minMs || newBlockEnd > bounds.maxMs) {
+      calendar.resumeRendering();
+      undo(calendar);
+      return;
+    }
+    shiftEvents(block.events, newBlockStart - block.blockStart);
+  } else {
+    // Swap: exchange positions
+    const neighborDuration = neighbor.end.getTime() - neighbor.start.getTime();
+    if (direction === 1) {
+      // Neighbor goes to block's old start, block shifts right by neighbor duration
+      neighbor.setDates(new Date(block.blockStart), new Date(block.blockStart + neighborDuration));
+      shiftEvents(block.events, neighborDuration);
+    } else {
+      // Neighbor goes to block's old end minus its duration, block shifts left by neighbor duration
+      neighbor.setDates(new Date(block.blockEnd - neighborDuration), new Date(block.blockEnd));
+      shiftEvents(block.events, -neighborDuration);
+    }
+
+    // Check bounds after swap
+    const newStart = Math.min(...block.events.map(e => e.start.getTime()));
+    const newEnd = Math.max(...block.events.map(e => e.end.getTime()));
+    if (newStart < bounds.minMs || newEnd > bounds.maxMs) {
+      calendar.resumeRendering();
+      undo(calendar);
+      return;
+    }
+  }
+  calendar.resumeRendering();
+}
+
+// --- Main keydown handler ---
+
+function handleKeydown(e) {
+  var _e$target;
+  // Skip if typing in an input
+  const tag = (_e$target = e.target) == null ? void 0 : _e$target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  const mode = keyboardMode();
+  if (mode === 'normal') {
+    switch (e.key) {
+      case 'v':
+        {
+          const sorted = getSortedEvents();
+          const filtered = getFilteredEvents(sorted);
+          if (filtered.length === 0) return;
+          e.preventDefault();
+          setKeyboardMode('select');
+          const closest = findClosestEventToNow(filtered);
+          if (closest) focusEvent(closest.id);
+          break;
+        }
+      case 'm':
+      case 's':
+        if (getSelectedEvents().length > 0) {
+          e.preventDefault();
+          enterMoveMode(e.key === 'm' ? 'push' : 'swap');
+        }
+        break;
+      case 'Escape':
+        if (getSelectedEvents().length > 0) {
+          e.preventDefault();
+          clearSelection();
+        }
+        break;
+    }
+    return;
+  }
+  if (mode === 'select') {
+    switch (e.key) {
+      case 'j':
+        e.preventDefault();
+        if (e.shiftKey) {
+          rangeSelect(1);
+        } else {
+          moveFocus(1);
+        }
+        break;
+      case 'k':
+        e.preventDefault();
+        if (e.shiftKey) {
+          rangeSelect(-1);
+        } else {
+          moveFocus(-1);
+        }
+        break;
+      case 'J':
+        e.preventDefault();
+        rangeSelect(1);
+        break;
+      case 'K':
+        e.preventDefault();
+        rangeSelect(-1);
+        break;
+      case 'g':
+        e.preventDefault();
+        jumpFocus('first');
+        break;
+      case 'G':
+        e.preventDefault();
+        jumpFocus('last');
+        break;
+      case ' ':
+      case 'Enter':
+        e.preventDefault();
+        toggleSelectFocused();
+        break;
+      case 'd':
+      case 'Delete':
+        e.preventDefault();
+        deleteSelectedEvents();
+        break;
+      case 'a':
+        e.preventDefault();
+        handleFilterChange('all');
+        break;
+      case 'u':
+        e.preventDefault();
+        handleFilterChange('unfinished');
+        break;
+      case 'f':
+        e.preventDefault();
+        handleFilterChange('finished');
+        break;
+      case 'm':
+        e.preventDefault();
+        enterMoveMode('push');
+        break;
+      case 's':
+        e.preventDefault();
+        enterMoveMode('swap');
+        break;
+      case 'Escape':
+        e.preventDefault();
+        focusEvent(null);
+        setEventFilter('all');
+        setKeyboardMode('normal');
+        break;
+    }
+    return;
+  }
+  if (mode === 'move') {
+    switch (e.key) {
+      case 'j':
+        e.preventDefault();
+        if (moveSubMode() === 'push') {
+          movePush(1, e.altKey);
+        } else {
+          moveSwap(1);
+        }
+        break;
+      case 'k':
+        e.preventDefault();
+        if (moveSubMode() === 'push') {
+          movePush(-1, e.altKey);
+        } else {
+          moveSwap(-1);
+        }
+        break;
+      case 'm':
+        e.preventDefault();
+        setMoveSubMode('push');
+        break;
+      case 's':
+        e.preventDefault();
+        setMoveSubMode('swap');
+        break;
+      case 'Escape':
+      case 'v':
+        e.preventDefault();
+        setKeyboardMode('select');
+        break;
+    }
+    return;
+  }
+}
+
+// --- Setup and cleanup ---
+
+function setupKeyboardHandlers() {
+  const handler = e => handleKeydown(e);
+  document.addEventListener('keydown', handler);
+  return () => {
+    document.removeEventListener('keydown', handler);
+    setKeyboardMode('normal');
+    setFocusedEventId(null);
+    setEventFilter('all');
+  };
+}
+
 function createCalendar(initialEvents) {
   const calendarEl = document.getElementById('calendar');
   const wrapperEl = document.getElementById('calendar-wrapper');
@@ -15848,8 +16668,10 @@ function createCalendar(initialEvents) {
       calendar.unselect();
     },
     eventClassNames: info => {
-      if (info.event.extendedProps.pinType === 'ghost') return ['ghost-pin'];
-      return [];
+      const classes = [];
+      if (info.event.extendedProps.pinType === 'ghost') classes.push('ghost-pin');
+      if (info.event.id === focusedEventId()) classes.push('focused-event');
+      return classes;
     },
     allDaySlot: false,
     events: initialEvents,
@@ -15888,12 +16710,30 @@ function createCalendar(initialEvents) {
     eventClick: info => {
       console.debug('eventClick', info);
       if (info.jsEvent.shiftKey) return;
-      if (info.jsEvent.ctrlKey) return;
 
-      // Handle left click - toggle finished
+      // Ctrl+click: toggle-select in any mode
+      if (info.jsEvent.ctrlKey) {
+        handleCtrlClick(info.event);
+        return;
+      }
+
+      // In select/move mode: left click = focus + toggle-select
+      if (keyboardMode() === 'select' || keyboardMode() === 'move') {
+        handleSelectModeClick(info.event);
+        return;
+      }
+
+      // Normal mode: toggle finished
       pushUndo(calendar);
       const finished = info.event.extendedProps.finished;
       info.event.setExtendedProp('finished', !finished);
+
+      // Immediately update color so the change is visible without waiting for DOM observer
+      if (info.event.extendedProps.customEvent) {
+        const color = !finished ? colors.finishedEvent.hsl().string() : colors.customEvent.hsl().string();
+        info.event.setProp('backgroundColor', color);
+        info.event.setProp('borderColor', color);
+      }
     },
     eventDragStart: () => {
       pushUndo(calendar);
@@ -15911,6 +16751,19 @@ function createCalendar(initialEvents) {
   document.head.appendChild(ghostStyle);
   calendarEl.style.setProperty('--ghost-opacity', String(state.ghostOpacity));
   const cleanupSelectionHandlers = setupSelectionHandlers(calendarEl, calendar);
+  const cleanupKeyboardHandlers = setupKeyboardHandlers();
+
+  // Empty-space click exits keyboard mode
+  calendarEl.addEventListener('click', e => {
+    const target = e.target;
+    if (target.closest('.fc-event')) return;
+    if (e.ctrlKey || e.shiftKey) return;
+    if (keyboardMode() !== 'normal') {
+      clearSelectionAndFocus();
+      setKeyboardMode('normal');
+    }
+  });
+
   // Override the destroy method to include cleanup
   const resizeObserver = new ResizeObserver(() => calendar.updateSize());
   resizeObserver.observe(wrapperEl);
@@ -15918,8 +16771,9 @@ function createCalendar(initialEvents) {
   calendar.destroy = () => {
     console.debug('destroying calendar');
     resizeObserver.disconnect();
-    // Call the cleanup function
+    // Call the cleanup functions
     cleanupSelectionHandlers();
+    cleanupKeyboardHandlers();
     // Call the original destroy method
     originalDestroy();
     // Cleanup the calendarEl
@@ -16847,257 +17701,18 @@ const HighlightTasksToggle = () => {
 const TaskHighlighter = HighlightTasksToggle;
 web.delegateEvents(["click"]);
 
-function isFinished(event) {
-  var _event$extendedProps$;
-  const finishedColor = colors.finishedEvent.hsl().string();
-  if (event.backgroundColor === finishedColor) return true;
-  if (((_event$extendedProps$ = event.extendedProps.original) == null ? void 0 : _event$extendedProps$.backgroundColor) === finishedColor) return true;
-  return false;
-}
-function isPinned(event) {
-  return event.extendedProps.pinType === 'solid' || event.extendedProps.pinType === 'ghost';
-}
-function findPlacementAvoidingSolidPins(proposedStart, duration, solidPins) {
-  let start = proposedStart;
-  let end = start + duration;
-  for (const pin of solidPins) {
-    if (end <= pin.start || start >= pin.end) continue;
-    start = pin.end;
-    end = start + duration;
-  }
-  return start;
-}
-function buildOverlapGroups(sortedEvents) {
-  if (sortedEvents.length === 0) return [];
-  const groups = [[sortedEvents[0]]];
-  let groupMaxEnd = sortedEvents[0].end.getTime();
-  for (let i = 1; i < sortedEvents.length; i++) {
-    const event = sortedEvents[i];
-    if (event.start.getTime() < groupMaxEnd) {
-      groups[groups.length - 1].push(event);
-    } else {
-      groups.push([event]);
-    }
-    groupMaxEnd = Math.max(groupMaxEnd, event.end.getTime());
-  }
-  return groups;
-}
-function getClusterStart(cluster) {
-  return Math.min(...cluster.map(e => e.start.getTime()));
-}
-function getClusterEnd(cluster) {
-  return Math.max(...cluster.map(e => e.end.getTime()));
-}
-function roundUpTo5(date) {
-  const ms = date.getTime();
-  const fiveMin = 5 * 60 * 1000;
-  const rounded = Math.ceil(ms / fiveMin) * fiveMin;
-  return new Date(rounded);
-}
-function roundDownTo5(date) {
-  const ms = date.getTime();
-  const fiveMin = 5 * 60 * 1000;
-  const rounded = Math.floor(ms / fiveMin) * fiveMin;
-  return new Date(rounded);
-}
-function clusterHasLongEvent(cluster) {
-  return cluster.some(e => e.end.getTime() - e.start.getTime() >= 5 * 60 * 1000);
-}
-function shiftCluster(cluster, newStart) {
-  const oldStart = getClusterStart(cluster);
-  const offset = newStart.getTime() - oldStart;
-  for (const event of cluster) {
-    const newEventStart = new Date(event.start.getTime() + offset);
-    const newEventEnd = new Date(event.end.getTime() + offset);
-    event.setDates(newEventStart, newEventEnd);
-  }
-}
-function catchupEvents(calendar, finishedMode = 'move') {
-  const now = getRoundedNow(5);
-  const nowMs = now.getTime();
-  const nowRoundedDown = roundDownTo5(new Date());
-  const nowRoundedDownMs = nowRoundedDown.getTime();
-  console.debug('catchup:', {
-    actualNow: new Date().toLocaleTimeString(),
-    roundedUpNow: now.toLocaleTimeString(),
-    roundedDownNow: nowRoundedDown.toLocaleTimeString()
-  });
-  const allEvents = calendar.getEvents();
-
-  // Deselect all selected events first
-  const selected = allEvents.filter(e => e.extendedProps.selected);
-  if (selected.length > 0) deselectEvents(selected);
-
-  // Separate into finished and unfinished (excluding pinned events)
-  const finished = allEvents.filter(e => isFinished(e) && !isPinned(e)).sort((a, b) => a.start.getTime() - b.start.getTime());
-  const unfinished = allEvents.filter(e => !isFinished(e) && !isPinned(e)).sort((a, b) => a.start.getTime() - b.start.getTime());
-
-  // Collect solid pins as obstacles for forward packing
-  const solidPins = allEvents.filter(e => e.extendedProps.pinType === 'solid').map(e => ({
-    start: e.start.getTime(),
-    end: e.end.getTime()
-  })).sort((a, b) => a.start - b.start);
-  const finishedAfterNow = finished.filter(e => e.end.getTime() > nowRoundedDownMs);
-  const finishedBeforeNow = finished.filter(e => e.end.getTime() <= nowRoundedDownMs);
-  const shouldMoveFinished = finishedMode !== 'none';
-  const hasFinishedAfterNow = shouldMoveFinished && finishedAfterNow.length > 0;
-
-  // Build overlap groups from ALL unfinished events so overlapping events stay together
-  const unfinishedGroups = buildOverlapGroups(unfinished);
-
-  // A group needs moving if any event in it starts before now
-  const hasPastEvent = group => group.some(e => e.start.getTime() < nowMs);
-  const hasUnfinishedToMove = unfinishedGroups.some(hasPastEvent);
-  if (!hasFinishedAfterNow && !hasUnfinishedToMove) return;
-  calendar.pauseRendering();
-
-  // --- Move finished-after-now overlap groups backwards from now ---
-  if (hasFinishedAfterNow) {
-    const finishedAfterNowGroups = buildOverlapGroups(finishedAfterNow.sort((a, b) => a.start.getTime() - b.start.getTime()));
-    let endTime = nowRoundedDownMs;
-    for (let i = finishedAfterNowGroups.length - 1; i >= 0; i--) {
-      const group = finishedAfterNowGroups[i];
-      const groupDuration = getClusterEnd(group) - getClusterStart(group);
-      let newStartMs = endTime - groupDuration;
-      if (clusterHasLongEvent(group)) {
-        newStartMs = roundDownTo5(new Date(newStartMs)).getTime();
-      }
-      shiftCluster(group, new Date(newStartMs));
-      endTime = newStartMs;
-    }
-
-    // --- Cascade finished-before-now overlap groups if toggle is on ---
-    if (finishedMode === 'cascade') {
-      const finishedBeforeNowGroups = buildOverlapGroups(finishedBeforeNow.sort((a, b) => a.start.getTime() - b.start.getTime()));
-      for (let i = finishedBeforeNowGroups.length - 1; i >= 0; i--) {
-        const group = finishedBeforeNowGroups[i];
-        const groupEnd = getClusterEnd(group);
-        if (groupEnd > endTime) {
-          const groupDuration = groupEnd - getClusterStart(group);
-          let newStartMs = endTime - groupDuration;
-          if (clusterHasLongEvent(group)) {
-            newStartMs = roundDownTo5(new Date(newStartMs)).getTime();
-          }
-          shiftCluster(group, new Date(newStartMs));
-          endTime = newStartMs;
-        } else {
-          break;
-        }
-      }
-    }
-  }
-
-  // --- Pack unfinished overlap groups forwards from now ---
-  if (hasUnfinishedToMove) {
-    let placementTime = new Date(nowMs);
-    let runningEnd = nowMs;
-    for (const group of unfinishedGroups) {
-      const groupDuration = getClusterEnd(group) - getClusterStart(group);
-      if (hasPastEvent(group)) {
-        // Move this group to placementTime
-        if (clusterHasLongEvent(group)) {
-          placementTime = roundUpTo5(placementTime);
-        }
-        const adjustedStart = findPlacementAvoidingSolidPins(placementTime.getTime(), groupDuration, solidPins);
-        shiftCluster(group, new Date(adjustedStart));
-        placementTime = new Date(getClusterEnd(group));
-        runningEnd = placementTime.getTime();
-      } else {
-        // Future group — only push if it overlaps with runningEnd
-        const groupStart = getClusterStart(group);
-        if (groupStart < runningEnd) {
-          let newStart = new Date(runningEnd);
-          if (clusterHasLongEvent(group)) {
-            newStart = roundUpTo5(newStart);
-          }
-          const adjustedStart = findPlacementAvoidingSolidPins(newStart.getTime(), groupDuration, solidPins);
-          shiftCluster(group, new Date(adjustedStart));
-          runningEnd = getClusterEnd(group);
-        } else {
-          runningEnd = Math.max(runningEnd, getClusterEnd(group));
-        }
-      }
-    }
-  }
-  calendar.resumeRendering();
-}
-function buildClusters(sortedEvents) {
-  if (sortedEvents.length === 0) return [];
-  const FIVE_MIN = 5 * 60 * 1000;
-  const clusters = [[sortedEvents[0]]];
-  let clusterMaxEnd = sortedEvents[0].end.getTime();
-  for (let i = 1; i < sortedEvents.length; i++) {
-    const event = sortedEvents[i];
-    if (event.start.getTime() < clusterMaxEnd + FIVE_MIN) {
-      clusters[clusters.length - 1].push(event);
-    } else {
-      clusters.push([event]);
-    }
-    clusterMaxEnd = Math.max(clusterMaxEnd, event.end.getTime());
-  }
-  return clusters;
-}
-function squeezeEvents(calendar) {
-  const now = getRoundedNow(5);
-  const nowMs = now.getTime();
-  const allEvents = calendar.getEvents();
-
-  // Deselect all selected events first (prevents groupId move bug)
-  const selected = allEvents.filter(e => e.extendedProps.selected);
-  if (selected.length > 0) deselectEvents(selected);
-  const movable = allEvents.filter(e => !isPinned(e)).sort((a, b) => {
-    const startDiff = a.start.getTime() - b.start.getTime();
-    if (startDiff !== 0) return startDiff;
-    // Longer events first so they set the tolerance in buildClusters
-    const aDur = a.end.getTime() - a.start.getTime();
-    const bDur = b.end.getTime() - b.start.getTime();
-    return bDur - aDur;
-  });
-  const clusters = buildClusters(movable);
-  if (clusters.length === 0) return;
-  const nowGroupIdx = clusters.findIndex(c => getClusterStart(c) <= nowMs && getClusterEnd(c) >= nowMs);
-  console.debug('squeeze:', {
-    now: now.toLocaleTimeString(),
-    nowMs,
-    numClusters: clusters.length,
-    nowGroupIdx,
-    clusters: clusters.map((c, i) => ({
-      i,
-      start: new Date(getClusterStart(c)).toLocaleTimeString(),
-      end: new Date(getClusterEnd(c)).toLocaleTimeString(),
-      events: c.length
-    }))
-  });
-  calendar.pauseRendering();
-  if (nowGroupIdx !== -1) {
-    const nextIdx = nowGroupIdx + 1;
-    if (nextIdx < clusters.length) {
-      let newStart = new Date(getClusterEnd(clusters[nowGroupIdx]));
-      if (clusterHasLongEvent(clusters[nextIdx])) {
-        newStart = roundUpTo5(newStart);
-      }
-      shiftCluster(clusters[nextIdx], newStart);
-    }
-  } else {
-    const firstAfter = clusters.find(c => getClusterStart(c) > nowMs);
-    if (firstAfter) {
-      shiftCluster(firstAfter, now);
-    }
-  }
-  calendar.resumeRendering();
-}
-
-var _tmpl$ = /*#__PURE__*/web.template(`<div><div><h2>Calendar</h2><div><button class=cal-header-btn title="Create Calendar">󰃳</button><button class=cal-header-btn title="Delete Calendar">󰧧 </button><button class=cal-header-btn title="Copy to Clipboard"></button><button class=cal-header-btn title="Load from Saved">󰬥</button><button class=cal-header-btn title="Catchup (Ctrl+Shift+Space)">󰚰</button><button class=cal-header-btn title="Squeeze (Ctrl+Shift+S)">󰡍</button><button class=cal-header-btn title="Undo (Ctrl+Z)">󰕌</button><button class=cal-header-btn title="Redo (Ctrl+Shift+Z)">󰑎</button><button class=cal-header-btn title="Show more"></button></div></div><div id=calendar-wrapper><div id=calendar>`),
-  _tmpl$2 = /*#__PURE__*/web.template(`<label>Min Time`),
-  _tmpl$3 = /*#__PURE__*/web.template(`<input type=time value=03:00>`),
-  _tmpl$4 = /*#__PURE__*/web.template(`<label>Max Time`),
-  _tmpl$5 = /*#__PURE__*/web.template(`<input type=time value=02:00>`),
-  _tmpl$6 = /*#__PURE__*/web.template(`<button>Print Events`),
-  _tmpl$7 = /*#__PURE__*/web.template(`<br>`),
-  _tmpl$8 = /*#__PURE__*/web.template(`<label>Finished events: <select><option value=none>Don't move</option><option value=move>Move</option><option value=cascade>Move + cascade`),
-  _tmpl$9 = /*#__PURE__*/web.template(`<label>Ghost opacity: <input type=range min=0.1 max=1 step=0.05>`),
-  _tmpl$10 = /*#__PURE__*/web.template(`<div>: `),
-  _tmpl$11 = /*#__PURE__*/web.template(`<div>`);
+var _tmpl$ = /*#__PURE__*/web.template(`<div class=mode-indicator>`),
+  _tmpl$2 = /*#__PURE__*/web.template(`<div><div><h2>Calendar</h2><div><button class=cal-header-btn title="Create Calendar">󰃳</button><button class=cal-header-btn title="Delete Calendar">󰧧</button><button class=cal-header-btn title="Copy to Clipboard"></button><button class=cal-header-btn title="Load from Saved">󰬥</button><button class=cal-header-btn title="Catchup (Ctrl+Shift+Space)">󰚰</button><button class=cal-header-btn title="Squeeze (Ctrl+Shift+S)">󰡍</button><button class=cal-header-btn title="Undo (Ctrl+Z)">󰕌</button><button class=cal-header-btn title="Redo (Ctrl+Shift+Z)">󰑎</button><button class=cal-header-btn title="Show more"></button></div></div><div id=calendar-wrapper><div id=calendar>`),
+  _tmpl$3 = /*#__PURE__*/web.template(`<label>Min Time`),
+  _tmpl$4 = /*#__PURE__*/web.template(`<input type=time value=03:00>`),
+  _tmpl$5 = /*#__PURE__*/web.template(`<label>Max Time`),
+  _tmpl$6 = /*#__PURE__*/web.template(`<input type=time value=02:00>`),
+  _tmpl$7 = /*#__PURE__*/web.template(`<button>Print Events`),
+  _tmpl$8 = /*#__PURE__*/web.template(`<br>`),
+  _tmpl$9 = /*#__PURE__*/web.template(`<label>Finished events: <select><option value=none>Don't move</option><option value=move>Move</option><option value=cascade>Move + cascade`),
+  _tmpl$10 = /*#__PURE__*/web.template(`<label>Ghost opacity: <input type=range min=0.1 max=1 step=0.05>`),
+  _tmpl$11 = /*#__PURE__*/web.template(`<div>: `),
+  _tmpl$12 = /*#__PURE__*/web.template(`<div>`);
 const MOBILE_BREAKPOINT_WIDTH = 770;
 const [dupeEvents, setDupeEvents] = solidJs.createSignal({});
 const [showMore, setShowMore] = solidJs.createSignal(false);
@@ -17180,7 +17795,7 @@ dom.observe(document.body, () => {
   const Wrapper = () => {
     let wrapperEl;
     return (() => {
-      var _el$ = _tmpl$(),
+      var _el$ = _tmpl$2(),
         _el$2 = _el$.firstChild,
         _el$3 = _el$2.firstChild,
         _el$4 = _el$3.nextSibling,
@@ -17193,7 +17808,8 @@ dom.observe(document.body, () => {
         _el$11 = _el$10.nextSibling,
         _el$12 = _el$11.nextSibling,
         _el$13 = _el$12.nextSibling,
-        _el$14 = _el$2.nextSibling;
+        _el$15 = _el$2.nextSibling;
+      _el$.style.setProperty("position", "relative");
       _el$2.style.setProperty("display", "flex");
       _el$2.style.setProperty("align-items", "center");
       _el$3.style.setProperty("margin-bottom", "0");
@@ -17216,35 +17832,35 @@ dom.observe(document.body, () => {
       web.insert(_el$13, () => showMore() ? '󰅃' : '󰅀');
       web.insert(_el$, (() => {
         var _c$ = web.memo(() => !!showMore());
-        return () => _c$() && [_tmpl$2(), (() => {
-          var _el$16 = _tmpl$3();
-          _el$16.$$input = handleMinTimeChange;
-          return _el$16;
-        })(), _tmpl$4(), (() => {
-          var _el$18 = _tmpl$5();
-          _el$18.$$input = handleMaxTimeChange;
-          return _el$18;
-        })(), (() => {
+        return () => _c$() && [_tmpl$3(), (() => {
+          var _el$17 = _tmpl$4();
+          _el$17.$$input = handleMinTimeChange;
+          return _el$17;
+        })(), _tmpl$5(), (() => {
           var _el$19 = _tmpl$6();
-          _el$19.$$click = printEvents;
+          _el$19.$$input = handleMaxTimeChange;
           return _el$19;
-        })(), _tmpl$7(), (() => {
-          var _el$21 = _tmpl$8(),
-            _el$22 = _el$21.firstChild,
-            _el$24 = _el$22.nextSibling;
-          _el$24.addEventListener("change", e => {
+        })(), (() => {
+          var _el$20 = _tmpl$7();
+          _el$20.$$click = printEvents;
+          return _el$20;
+        })(), _tmpl$8(), (() => {
+          var _el$22 = _tmpl$9(),
+            _el$23 = _el$22.firstChild,
+            _el$25 = _el$23.nextSibling;
+          _el$25.addEventListener("change", e => {
             const val = e.currentTarget.value;
             setFinishedMode(val);
             localStorage.setItem('finishedMode', val);
           });
-          web.effect(() => _el$24.value = finishedMode());
-          return _el$21;
-        })(), _tmpl$7(), (() => {
-          var _el$26 = _tmpl$9(),
-            _el$27 = _el$26.firstChild,
-            _el$28 = _el$27.nextSibling;
-          web.insert(_el$26, () => ghostOpacity().toFixed(2), _el$28);
-          _el$28.$$input = e => {
+          web.effect(() => _el$25.value = finishedMode());
+          return _el$22;
+        })(), _tmpl$8(), (() => {
+          var _el$27 = _tmpl$10(),
+            _el$28 = _el$27.firstChild,
+            _el$29 = _el$28.nextSibling;
+          web.insert(_el$27, () => ghostOpacity().toFixed(2), _el$29);
+          _el$29.$$input = e => {
             const val = parseFloat(e.currentTarget.value);
             setGhostOpacity(val);
             state.ghostOpacity = val;
@@ -17252,19 +17868,35 @@ dom.observe(document.body, () => {
             const calEl = document.getElementById('calendar');
             calEl == null || calEl.style.setProperty('--ghost-opacity', String(val));
           };
-          web.effect(() => _el$28.value = ghostOpacity());
-          return _el$26;
-        })(), _tmpl$7(), web.memo(() => Object.entries(dupeEvents()).map(([eventName, duration]) => (() => {
-          var _el$30 = _tmpl$10(),
-            _el$31 = _el$30.firstChild;
-          web.insert(_el$30, eventName, _el$31);
-          web.insert(_el$30, () => msToHHMM(duration), null);
-          return _el$30;
+          web.effect(() => _el$29.value = ghostOpacity());
+          return _el$27;
+        })(), _tmpl$8(), web.memo(() => Object.entries(dupeEvents()).map(([eventName, duration]) => (() => {
+          var _el$31 = _tmpl$11(),
+            _el$32 = _el$31.firstChild;
+          web.insert(_el$31, eventName, _el$32);
+          web.insert(_el$31, () => msToHHMM(duration), null);
+          return _el$31;
         })()))];
-      })(), _el$14);
+      })(), _el$15);
+      web.insert(_el$, web.createComponent(solidJs.Show, {
+        get when() {
+          return keyboardMode() !== 'normal';
+        },
+        get children() {
+          var _el$14 = _tmpl$();
+          web.insert(_el$14, (() => {
+            var _c$2 = web.memo(() => keyboardMode() === 'select');
+            return () => _c$2() ? (() => {
+              var _c$3 = web.memo(() => eventFilter() === 'all');
+              return () => _c$3() ? '-- SELECT --' : `-- SELECT (${eventFilter()}) --`;
+            })() : `-- MOVE (${moveSubMode()}) --`;
+          })());
+          return _el$14;
+        }
+      }), _el$15);
       var _ref$ = wrapperEl;
-      typeof _ref$ === "function" ? web.use(_ref$, _el$14) : wrapperEl = _el$14;
-      _el$14.style.setProperty("overflow", "auto");
+      typeof _ref$ === "function" ? web.use(_ref$, _el$15) : wrapperEl = _el$15;
+      _el$15.style.setProperty("overflow", "auto");
       web.effect(_p$ => {
         var _v$ = undoCount() === 0,
           _v$2 = undoCount() === 0 ? 0.35 : 1,
@@ -17275,7 +17907,7 @@ dom.observe(document.body, () => {
         _v$2 !== _p$.t && ((_p$.t = _v$2) != null ? _el$11.style.setProperty("opacity", _v$2) : _el$11.style.removeProperty("opacity"));
         _v$3 !== _p$.a && (_el$12.disabled = _p$.a = _v$3);
         _v$4 !== _p$.o && ((_p$.o = _v$4) != null ? _el$12.style.setProperty("opacity", _v$4) : _el$12.style.removeProperty("opacity"));
-        _v$5 !== _p$.i && ((_p$.i = _v$5) != null ? _el$14.style.setProperty("height", _v$5) : _el$14.style.removeProperty("height"));
+        _v$5 !== _p$.i && ((_p$.i = _v$5) != null ? _el$15.style.setProperty("height", _v$5) : _el$15.style.removeProperty("height"));
         return _p$;
       }, {
         e: undefined,
@@ -17310,10 +17942,10 @@ dom.observe(document.body, () => {
   const dailiesColumn = document.querySelector('.tasks-column.daily');
   if (!dailiesColumn) return false;
   web.render(() => (() => {
-    var _el$32 = _tmpl$11();
-    web.insert(_el$32, web.createComponent(TaskTools, {}), null);
-    web.insert(_el$32, web.createComponent(TaskHighlighter, {}), null);
-    return _el$32;
+    var _el$33 = _tmpl$12();
+    web.insert(_el$33, web.createComponent(TaskTools, {}), null);
+    web.insert(_el$33, web.createComponent(TaskHighlighter, {}), null);
+    return _el$33;
   })(), dailiesColumn);
   return true;
 });

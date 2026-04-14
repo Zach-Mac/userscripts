@@ -3,14 +3,14 @@ import { colors } from '../global'
 import { getRoundedNow } from './utils'
 import { deselectEvents } from './selection'
 
-function isFinished(event: EventApi): boolean {
+export function isFinished(event: EventApi): boolean {
     const finishedColor = colors.finishedEvent.hsl().string()
     if (event.backgroundColor === finishedColor) return true
     if (event.extendedProps.original?.backgroundColor === finishedColor) return true
     return false
 }
 
-function isPinned(event: EventApi): boolean {
+export function isPinned(event: EventApi): boolean {
     return event.extendedProps.pinType === 'solid' || event.extendedProps.pinType === 'ghost'
 }
 

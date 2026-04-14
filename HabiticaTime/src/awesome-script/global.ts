@@ -1,5 +1,15 @@
 import { Calendar, Duration, DurationInput } from '@fullcalendar/core'
 import Color from 'color'
+import { createSignal } from 'solid-js'
+
+export type KeyboardMode = 'normal' | 'select' | 'move'
+export type MoveSubMode = 'push' | 'swap'
+export type EventFilter = 'all' | 'unfinished' | 'finished'
+
+export const [keyboardMode, setKeyboardMode] = createSignal<KeyboardMode>('normal')
+export const [moveSubMode, setMoveSubMode] = createSignal<MoveSubMode>('push')
+export const [eventFilter, setEventFilter] = createSignal<EventFilter>('all')
+export const [focusedEventId, setFocusedEventId] = createSignal<string | null>(null)
 
 export const state = {
     currZoomLevel: 2,
