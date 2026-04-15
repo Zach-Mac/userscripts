@@ -4,7 +4,7 @@ import { refreshSelectedCount } from './selection'
 
 type EventSnapshot = Record<string, unknown>[]
 
-const MAX_HISTORY = 20
+const MAX_HISTORY = 1000
 const undoStack: EventSnapshot[] = []
 const redoStack: EventSnapshot[] = []
 let restoring = false

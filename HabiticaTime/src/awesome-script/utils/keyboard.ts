@@ -333,10 +333,14 @@ function movePush(direction: 1 | -1, overlap: boolean): void {
 
     const pushable = others.filter(e => e.extendedProps.pinType !== 'ghost')
 
+    // Group overlapping events so they get pushed by the same amount
+    const pushed = new Set<string>()
+
     if (direction === 1) {
         pushable.sort((a, b) => a.start.getTime() - b.start.getTime())
         let wavefront = newBlockEnd
         for (const event of pushable) {
+            if (pushed.has(event.id)) continue
             const eStart = event.start.getTime()
             const eEnd = event.end.getTime()
             if (eStart < wavefront && eEnd > newBlockStart) {
@@ -345,21 +349,49 @@ function movePush(direction: 1 | -1, overlap: boolean): void {
                     undo(calendar)
                     return
                 }
+                // Find all events overlapping with this one (same start or overlapping range)
+                const group = pushable.filter(e => {
+                    if (pushed.has(e.id) || e.id === event.id) return false
+                    const s = e.start.getTime()
+                    const en = e.end.getTime()
+                    return s < eEnd && en > eStart
+                })
                 const pushAmount = wavefront - eStart
-                const newEnd = eEnd + pushAmount
-                if (newEnd > bounds.maxMs) {
+                let groupMaxEnd = eEnd + pushAmount
+                // Push the event and its overlapping group by the same amount
+                event.setDates(new Date(eStart + pushAmount), new Date(eEnd + pushAmount))
+                pushed.add(event.id)
+                for (const g of group) {
+                    if (g.extendedProps.pinType === 'solid') {
+                        calendar.resumeRendering()
+                        undo(calendar)
+                        return
+                    }
+                    const gs = g.start.getTime()
+                    const ge = g.end.getTime()
+                    const newEnd = ge + pushAmount
+                    if (newEnd > bounds.maxMs) {
+                        calendar.resumeRendering()
+                        undo(calendar)
+                        return
+                    }
+                    g.setDates(new Date(gs + pushAmount), new Date(newEnd))
+                    pushed.add(g.id)
+                    if (newEnd > groupMaxEnd) groupMaxEnd = newEnd
+                }
+                if (groupMaxEnd > bounds.maxMs) {
                     calendar.resumeRendering()
                     undo(calendar)
                     return
                 }
-                event.setDates(new Date(eStart + pushAmount), new Date(newEnd))
-                wavefront = newEnd
+                wavefront = groupMaxEnd
             }
         }
     } else {
         pushable.sort((a, b) => b.end.getTime() - a.end.getTime())
         let wavefront = newBlockStart
         for (const event of pushable) {
+            if (pushed.has(event.id)) continue
             const eStart = event.start.getTime()
             const eEnd = event.end.getTime()
             if (eEnd > wavefront && eStart < newBlockEnd) {
@@ -368,15 +400,42 @@ function movePush(direction: 1 | -1, overlap: boolean): void {
                     undo(calendar)
                     return
                 }
+                // Find all events overlapping with this one
+                const group = pushable.filter(e => {
+                    if (pushed.has(e.id) || e.id === event.id) return false
+                    const s = e.start.getTime()
+                    const en = e.end.getTime()
+                    return s < eEnd && en > eStart
+                })
                 const pushAmount = eEnd - wavefront
-                const newStart = eStart - pushAmount
-                if (newStart < bounds.minMs) {
+                let groupMinStart = eStart - pushAmount
+                // Push the event and its overlapping group by the same amount
+                event.setDates(new Date(eStart - pushAmount), new Date(eEnd - pushAmount))
+                pushed.add(event.id)
+                for (const g of group) {
+                    if (g.extendedProps.pinType === 'solid') {
+                        calendar.resumeRendering()
+                        undo(calendar)
+                        return
+                    }
+                    const gs = g.start.getTime()
+                    const ge = g.end.getTime()
+                    const newStart = gs - pushAmount
+                    if (newStart < bounds.minMs) {
+                        calendar.resumeRendering()
+                        undo(calendar)
+                        return
+                    }
+                    g.setDates(new Date(newStart), new Date(ge - pushAmount))
+                    pushed.add(g.id)
+                    if (newStart < groupMinStart) groupMinStart = newStart
+                }
+                if (groupMinStart < bounds.minMs) {
                     calendar.resumeRendering()
                     undo(calendar)
                     return
                 }
-                event.setDates(new Date(newStart), new Date(eEnd - pushAmount))
-                wavefront = newStart
+                wavefront = groupMinStart
             }
         }
     }
