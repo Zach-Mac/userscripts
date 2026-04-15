@@ -9,7 +9,9 @@ import {
     eventFilter,
     setEventFilter,
     focusedEventId,
-    setFocusedEventId
+    setFocusedEventId,
+    legendHidden,
+    setLegendHidden
 } from '../global'
 import { selectEvents, deselectEvents, getSelectedEvents, refreshSelectedCount } from './selection'
 import { isFinished } from './reschedule'
@@ -693,13 +695,21 @@ const bindings: KeyBinding[] = [
     },
     {
         mode: 'select',
-        key: EXIT_KEY,
+        key: [EXIT_KEY, 'v'],
         label: 'exit',
         handler: () => {
             focusEvent(null)
             setEventFilter('all')
             setKeyboardMode('normal')
         }
+    },
+
+    // --- Legend toggle (select + move) ---
+    {
+        mode: ['select', 'move'],
+        key: 'h',
+        label: 'toggle legend',
+        handler: () => setLegendHidden(!legendHidden())
     },
 
     // --- Move mode ---
@@ -807,7 +817,7 @@ const bindings: KeyBinding[] = [
 // --- Legend export ---
 
 export interface LegendEntry {
-    key: string
+    keys: string[]
     label: string
 }
 
@@ -822,27 +832,35 @@ export function getLegend(): LegendEntry[] {
 
         const label = typeof b.label === 'function' ? b.label() : b.label
 
-        // Build display key
-        const keys = Array.isArray(b.key) ? b.key : [b.key]
+        // Build display key (vim-style notation)
+        const rawKeys = Array.isArray(b.key) ? b.key : [b.key]
+        // Dedupe keys that differ only by case (e.g. ['j', 'J'] with shift)
+        const keys = [...new Set(rawKeys.map(k => k.toLowerCase()))]
         const prefix = b.prefix ? b.prefix : ''
-        const displayKey = keys
-            .map(k => {
-                const parts: string[] = []
-                if (b.ctrl) parts.push('Ctrl')
-                if (b.alt) parts.push('Alt')
-                if (b.shift) parts.push('Shift')
-                if (k === ' ') parts.push(prefix + 'Space')
-                else if (k === 'Escape') parts.push(prefix + 'Esc')
-                else parts.push(prefix + k)
-                return parts.join('+')
-            })
-            .join('/')
+        const displayKeys = keys.map(k => {
+            // Shorten key names
+            let name = k
+            if (k === ' ') name = 'Spc'
+            else if (k === 'escape') name = 'Esc'
+            else if (k === 'backspace') name = 'Bksp'
+            else if (k === 'delete') name = 'Del'
+            else if (k === 'enter') name = 'CR'
+
+            // Vim-style modifier notation: <C-z>, <C-S-z>, etc.
+            const mods: string[] = []
+            if (b.ctrl) mods.push('C')
+            if (b.alt) mods.push('A')
+            if (b.shift) mods.push('S')
+
+            if (mods.length > 0) return `<${mods.join('-')}-${name}>`
+            return prefix + name
+        })
 
         // Dedupe by label
         if (seen.has(label)) continue
         seen.add(label)
 
-        entries.push({ key: displayKey, label })
+        entries.push({ keys: displayKeys, label })
     }
 
     return entries

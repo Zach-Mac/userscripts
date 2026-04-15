@@ -12,7 +12,14 @@ import {
 } from './utils/habitica.js'
 import { getMinutesAgoString, getRoundedNow, msToHHMM } from './utils/utils.js'
 import { createSignal, Show, For } from 'solid-js'
-import { keyboardMode, eventFilter, moveSubMode, selectedCount } from './global.js'
+import {
+    keyboardMode,
+    eventFilter,
+    moveSubMode,
+    selectedCount,
+    legendHidden,
+    setLegendHidden
+} from './global.js'
 import { getLegend } from './utils/keyboard.js'
 import { TimeCalc } from './timeCalc.jsx'
 import { TaskTools } from './taskTools.jsx'
@@ -287,14 +294,27 @@ const initCalendar = observe(document.body, () => {
                             : `-- MOVE (${moveSubMode()}) --`}
                     </div>
                     <div class="key-legend">
-                        <For each={getLegend()}>
-                            {entry => (
-                                <span class="key-legend-entry">
-                                    <span class="key-legend-key">{entry.key}</span>
-                                    {entry.label}
-                                </span>
-                            )}
-                        </For>
+                        <button
+                            class="key-legend-toggle"
+                            onClick={() => setLegendHidden(!legendHidden())}
+                            title={legendHidden() ? 'Show legend (h)' : 'Hide legend (h)'}
+                        >
+                            {legendHidden() ? '\uf06e' : '\uf070'}
+                        </button>
+                        <Show when={!legendHidden()}>
+                            <For each={getLegend()}>
+                                {entry => (
+                                    <>
+                                        <span class="key-legend-keys">
+                                            <For each={entry.keys}>
+                                                {k => <span class="key-legend-key">{k}</span>}
+                                            </For>
+                                        </span>
+                                        <span class="key-legend-label">{entry.label}</span>
+                                    </>
+                                )}
+                            </For>
+                        </Show>
                     </div>
                 </Show>
 

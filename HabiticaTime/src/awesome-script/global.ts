@@ -11,6 +11,7 @@ export const [moveSubMode, setMoveSubMode] = createSignal<MoveSubMode>('push')
 export const [eventFilter, setEventFilter] = createSignal<EventFilter>('all')
 export const [focusedEventId, setFocusedEventId] = createSignal<string | null>(null)
 export const [selectedCount, setSelectedCount] = createSignal(0)
+export const [legendHidden, setLegendHidden] = createSignal(false)
 
 export const state = {
     currZoomLevel: 2,
