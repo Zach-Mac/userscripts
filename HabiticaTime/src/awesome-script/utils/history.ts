@@ -1,5 +1,6 @@
 import { Calendar } from '@fullcalendar/core'
 import { createSignal } from 'solid-js'
+import { refreshSelectedCount } from './selection'
 
 type EventSnapshot = Record<string, unknown>[]
 
@@ -50,6 +51,7 @@ export function undo(calendar: Calendar): void {
     redoStack.push(snapshotEvents(calendar))
     restoreSnapshot(calendar, snapshot)
     updateCounts()
+    refreshSelectedCount()
 }
 
 export function redo(calendar: Calendar): void {
@@ -58,4 +60,5 @@ export function redo(calendar: Calendar): void {
     undoStack.push(snapshotEvents(calendar))
     restoreSnapshot(calendar, snapshot)
     updateCounts()
+    refreshSelectedCount()
 }

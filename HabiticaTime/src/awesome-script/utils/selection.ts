@@ -1,12 +1,21 @@
 import { Calendar, EventApi } from '@fullcalendar/core'
 import Color from 'color'
-import { colors, state } from '../global'
+import { colors, state, setSelectedCount } from '../global'
 
 export interface SelectionArea {
     left: number
     top: number
     right: number
     bottom: number
+}
+
+export function getSelectedEvents(): EventApi[] {
+    if (!state.calendar) return []
+    return state.calendar.getEvents().filter(e => e.extendedProps.selected)
+}
+
+export function refreshSelectedCount(): void {
+    setSelectedCount(getSelectedEvents().length)
 }
 
 export function selectEvents(events: EventApi[]) {
@@ -21,6 +30,7 @@ export function selectEvents(events: EventApi[]) {
         // Have to set groupId LAST
         event.setProp('groupId', 'selected')
     }
+    refreshSelectedCount()
 }
 export function deselectEvents(events: EventApi[]) {
     for (const event of events) {
@@ -31,6 +41,7 @@ export function deselectEvents(events: EventApi[]) {
         event.setProp('backgroundColor', originalColor)
         event.setExtendedProp('selected', false)
     }
+    refreshSelectedCount()
 }
 export function updateSelectedEvents(
     container: HTMLElement,

@@ -15164,6 +15164,7 @@ const [keyboardMode, setKeyboardMode] = solidJs.createSignal('normal');
 const [moveSubMode, setMoveSubMode] = solidJs.createSignal('push');
 const [eventFilter, setEventFilter] = solidJs.createSignal('all');
 const [focusedEventId, setFocusedEventId] = solidJs.createSignal(null);
+const [selectedCount, setSelectedCount] = solidJs.createSignal(0);
 const state = {
   currZoomLevel: 2,
   calendar: null,
@@ -15263,6 +15264,13 @@ const colors = {
 };
 colors.defaultFullMin = colors.blueEvent.mix(colors.fullMinMix, 0.3);
 
+function getSelectedEvents() {
+  if (!state.calendar) return [];
+  return state.calendar.getEvents().filter(e => e.extendedProps.selected);
+}
+function refreshSelectedCount() {
+  setSelectedCount(getSelectedEvents().length);
+}
 function selectEvents(events) {
   for (const event of events) {
     const originalColor = event.extendedProps.original.backgroundColor;
@@ -15274,6 +15282,7 @@ function selectEvents(events) {
     // Have to set groupId LAST
     event.setProp('groupId', 'selected');
   }
+  refreshSelectedCount();
 }
 function deselectEvents(events) {
   for (const event of events) {
@@ -15284,6 +15293,7 @@ function deselectEvents(events) {
     event.setProp('backgroundColor', originalColor);
     event.setExtendedProp('selected', false);
   }
+  refreshSelectedCount();
 }
 function updateSelectedEvents(container, selectionArea, calendar) {
   const selectedEvents = [];
@@ -15582,6 +15592,7 @@ function undo(calendar) {
   redoStack.push(snapshotEvents(calendar));
   restoreSnapshot(calendar, snapshot);
   updateCounts();
+  refreshSelectedCount();
 }
 function redo(calendar) {
   const snapshot = redoStack.pop();
@@ -15589,6 +15600,7 @@ function redo(calendar) {
   undoStack.push(snapshotEvents(calendar));
   restoreSnapshot(calendar, snapshot);
   updateCounts();
+  refreshSelectedCount();
 }
 
 function isFinished(event) {
@@ -15898,11 +15910,6 @@ function jumpFocus(position) {
 
 // --- Selection management ---
 
-let rangeAnchorId = null;
-function getSelectedEvents() {
-  if (!state.calendar) return [];
-  return state.calendar.getEvents().filter(e => e.extendedProps.selected);
-}
 function toggleSelectFocused() {
   if (!state.calendar) return;
   const id = focusedEventId();
@@ -15914,31 +15921,32 @@ function toggleSelectFocused() {
     deselectEvents([event]);
   } else {
     selectEvents([event]);
-    if (!rangeAnchorId) rangeAnchorId = id;
   }
   state.calendar.resumeRendering();
 }
-function rangeSelect(direction) {
+function selectAndMove(direction) {
   if (!state.calendar) return;
-  const sorted = getSortedEvents();
-  const filtered = getFilteredEvents(sorted);
-  if (filtered.length === 0) return;
+
+  // Select current focused event
+  const currentId = focusedEventId();
+  if (currentId) {
+    const current = state.calendar.getEventById(currentId);
+    if (current && !current.extendedProps.selected) {
+      selectEvents([current]);
+    }
+  }
+
+  // Move focus
   moveFocus(direction);
-  const focusId = focusedEventId();
-  if (!focusId) return;
-  if (!rangeAnchorId) rangeAnchorId = focusId;
-  const anchorIndex = filtered.findIndex(e => e.id === rangeAnchorId);
-  const focusIndex = filtered.findIndex(e => e.id === focusId);
-  if (anchorIndex === -1 || focusIndex === -1) return;
-  const start = Math.min(anchorIndex, focusIndex);
-  const end = Math.max(anchorIndex, focusIndex);
-  const inRange = new Set(filtered.slice(start, end + 1).map(e => e.id));
-  state.calendar.pauseRendering();
-  const toSelect = filtered.slice(start, end + 1).filter(e => !e.extendedProps.selected);
-  if (toSelect.length > 0) selectEvents(toSelect);
-  const toDeselect = filtered.filter(e => e.extendedProps.selected && !inRange.has(e.id));
-  if (toDeselect.length > 0) deselectEvents(toDeselect);
-  state.calendar.resumeRendering();
+
+  // Select newly focused event
+  const newId = focusedEventId();
+  if (newId) {
+    const newEvent = state.calendar.getEventById(newId);
+    if (newEvent && !newEvent.extendedProps.selected) {
+      selectEvents([newEvent]);
+    }
+  }
 }
 function handleCtrlClick(event) {
   if (!state.calendar) return;
@@ -15962,7 +15970,6 @@ function clearSelection() {
     deselectEvents(selected);
     state.calendar.resumeRendering();
   }
-  rangeAnchorId = null;
 }
 function clearSelectionAndFocus() {
   clearSelection();
@@ -16029,6 +16036,7 @@ function deleteSelectedEvents() {
     for (const event of selected) {
       event.remove();
     }
+    refreshSelectedCount();
   }
 }
 
@@ -16297,14 +16305,14 @@ const bindings = [
   mode: 'select',
   key: ['j', 'J'],
   shift: true,
-  label: 'range next',
-  handler: () => rangeSelect(1)
+  label: 'select + next',
+  handler: () => selectAndMove(1)
 }, {
   mode: 'select',
   key: ['k', 'K'],
   shift: true,
-  label: 'range prev',
-  handler: () => rangeSelect(-1)
+  label: 'select + prev',
+  handler: () => selectAndMove(-1)
 }, {
   mode: 'select',
   key: 'g',
@@ -17871,19 +17879,20 @@ web.delegateEvents(["click"]);
 
 var _tmpl$ = /*#__PURE__*/web.template(`<div class=mode-indicator>`),
   _tmpl$2 = /*#__PURE__*/web.template(`<div class=key-legend>`),
-  _tmpl$3 = /*#__PURE__*/web.template(`<div><div><h2>Calendar</h2><div><button class=cal-header-btn title="Create Calendar">󰃳</button><button class=cal-header-btn title="Delete Calendar">󰧧</button><button class=cal-header-btn title="Copy to Clipboard"></button><button class=cal-header-btn title="Load from Saved">󰬥</button><button class=cal-header-btn title="Catchup (Ctrl+Shift+Space)">󰚰</button><button class=cal-header-btn title="Squeeze (Ctrl+Shift+S)">󰡍</button><button class=cal-header-btn title="Undo (Ctrl+Z)">󰕌</button><button class=cal-header-btn title="Redo (Ctrl+Shift+Z)">󰑎</button><button class=cal-header-btn title="Show more"></button></div></div><div id=calendar-wrapper><div id=calendar>`),
-  _tmpl$4 = /*#__PURE__*/web.template(`<label>Min Time`),
-  _tmpl$5 = /*#__PURE__*/web.template(`<input type=time value=03:00>`),
-  _tmpl$6 = /*#__PURE__*/web.template(`<label>Max Time`),
-  _tmpl$7 = /*#__PURE__*/web.template(`<input type=time value=02:00>`),
-  _tmpl$8 = /*#__PURE__*/web.template(`<button>Print Events`),
-  _tmpl$9 = /*#__PURE__*/web.template(`<br>`),
-  _tmpl$10 = /*#__PURE__*/web.template(`<label>Finished events: <select><option value=none>Don't move</option><option value=move>Move</option><option value=cascade>Move + cascade`),
-  _tmpl$11 = /*#__PURE__*/web.template(`<label>Ghost opacity: <input type=range min=0.1 max=1 step=0.05>`),
-  _tmpl$12 = /*#__PURE__*/web.template(`<label>Focus color: <input type=color>`),
-  _tmpl$13 = /*#__PURE__*/web.template(`<div>: `),
-  _tmpl$14 = /*#__PURE__*/web.template(`<span class=key-legend-entry><span class=key-legend-key>`),
-  _tmpl$15 = /*#__PURE__*/web.template(`<div>`);
+  _tmpl$3 = /*#__PURE__*/web.template(`<div class=mode-indicator> selected`),
+  _tmpl$4 = /*#__PURE__*/web.template(`<div><div><h2>Calendar</h2><div><button class=cal-header-btn title="Create Calendar">󰃳</button><button class=cal-header-btn title="Delete Calendar">󰧧</button><button class=cal-header-btn title="Copy to Clipboard"></button><button class=cal-header-btn title="Load from Saved">󰬥</button><button class=cal-header-btn title="Catchup (Ctrl+Shift+Space)">󰚰</button><button class=cal-header-btn title="Squeeze (Ctrl+Shift+S)">󰡍</button><button class=cal-header-btn title="Undo (Ctrl+Z)">󰕌</button><button class=cal-header-btn title="Redo (Ctrl+Shift+Z)">󰑎</button><button class=cal-header-btn title="Show more"></button></div></div><div id=calendar-wrapper><div id=calendar>`),
+  _tmpl$5 = /*#__PURE__*/web.template(`<label>Min Time`),
+  _tmpl$6 = /*#__PURE__*/web.template(`<input type=time value=03:00>`),
+  _tmpl$7 = /*#__PURE__*/web.template(`<label>Max Time`),
+  _tmpl$8 = /*#__PURE__*/web.template(`<input type=time value=02:00>`),
+  _tmpl$9 = /*#__PURE__*/web.template(`<button>Print Events`),
+  _tmpl$10 = /*#__PURE__*/web.template(`<br>`),
+  _tmpl$11 = /*#__PURE__*/web.template(`<label>Finished events: <select><option value=none>Don't move</option><option value=move>Move</option><option value=cascade>Move + cascade`),
+  _tmpl$12 = /*#__PURE__*/web.template(`<label>Ghost opacity: <input type=range min=0.1 max=1 step=0.05>`),
+  _tmpl$13 = /*#__PURE__*/web.template(`<label>Focus color: <input type=color>`),
+  _tmpl$14 = /*#__PURE__*/web.template(`<div>: `),
+  _tmpl$15 = /*#__PURE__*/web.template(`<span class=key-legend-entry><span class=key-legend-key>`),
+  _tmpl$16 = /*#__PURE__*/web.template(`<div>`);
 const MOBILE_BREAKPOINT_WIDTH = 770;
 const [dupeEvents, setDupeEvents] = solidJs.createSignal({});
 const [showMore, setShowMore] = solidJs.createSignal(false);
@@ -17968,7 +17977,7 @@ dom.observe(document.body, () => {
   const Wrapper = () => {
     let wrapperEl;
     return (() => {
-      var _el$ = _tmpl$3(),
+      var _el$ = _tmpl$4(),
         _el$2 = _el$.firstChild,
         _el$3 = _el$2.firstChild,
         _el$4 = _el$3.nextSibling,
@@ -17981,7 +17990,7 @@ dom.observe(document.body, () => {
         _el$11 = _el$10.nextSibling,
         _el$12 = _el$11.nextSibling,
         _el$13 = _el$12.nextSibling,
-        _el$16 = _el$2.nextSibling;
+        _el$18 = _el$2.nextSibling;
       _el$.style.setProperty("position", "relative");
       _el$2.style.setProperty("display", "flex");
       _el$2.style.setProperty("align-items", "center");
@@ -18005,35 +18014,35 @@ dom.observe(document.body, () => {
       web.insert(_el$13, () => showMore() ? '󰅃' : '󰅀');
       web.insert(_el$, (() => {
         var _c$ = web.memo(() => !!showMore());
-        return () => _c$() && [_tmpl$4(), (() => {
-          var _el$18 = _tmpl$5();
-          _el$18.$$input = handleMinTimeChange;
-          return _el$18;
-        })(), _tmpl$6(), (() => {
-          var _el$20 = _tmpl$7();
-          _el$20.$$input = handleMaxTimeChange;
+        return () => _c$() && [_tmpl$5(), (() => {
+          var _el$20 = _tmpl$6();
+          _el$20.$$input = handleMinTimeChange;
           return _el$20;
+        })(), _tmpl$7(), (() => {
+          var _el$22 = _tmpl$8();
+          _el$22.$$input = handleMaxTimeChange;
+          return _el$22;
         })(), (() => {
-          var _el$21 = _tmpl$8();
-          _el$21.$$click = printEvents;
-          return _el$21;
-        })(), _tmpl$9(), (() => {
-          var _el$23 = _tmpl$10(),
-            _el$24 = _el$23.firstChild,
-            _el$26 = _el$24.nextSibling;
-          _el$26.addEventListener("change", e => {
+          var _el$23 = _tmpl$9();
+          _el$23.$$click = printEvents;
+          return _el$23;
+        })(), _tmpl$10(), (() => {
+          var _el$25 = _tmpl$11(),
+            _el$26 = _el$25.firstChild,
+            _el$28 = _el$26.nextSibling;
+          _el$28.addEventListener("change", e => {
             const val = e.currentTarget.value;
             setFinishedMode(val);
             localStorage.setItem('finishedMode', val);
           });
-          web.effect(() => _el$26.value = finishedMode());
-          return _el$23;
-        })(), _tmpl$9(), (() => {
-          var _el$28 = _tmpl$11(),
-            _el$29 = _el$28.firstChild,
-            _el$30 = _el$29.nextSibling;
-          web.insert(_el$28, () => ghostOpacity().toFixed(2), _el$30);
-          _el$30.$$input = e => {
+          web.effect(() => _el$28.value = finishedMode());
+          return _el$25;
+        })(), _tmpl$10(), (() => {
+          var _el$30 = _tmpl$12(),
+            _el$31 = _el$30.firstChild,
+            _el$32 = _el$31.nextSibling;
+          web.insert(_el$30, () => ghostOpacity().toFixed(2), _el$32);
+          _el$32.$$input = e => {
             const val = parseFloat(e.currentTarget.value);
             setGhostOpacity(val);
             state.ghostOpacity = val;
@@ -18041,28 +18050,28 @@ dom.observe(document.body, () => {
             const calEl = document.getElementById('calendar');
             calEl == null || calEl.style.setProperty('--ghost-opacity', String(val));
           };
-          web.effect(() => _el$30.value = ghostOpacity());
-          return _el$28;
-        })(), _tmpl$9(), (() => {
-          var _el$32 = _tmpl$12(),
-            _el$33 = _el$32.firstChild,
-            _el$35 = _el$33.nextSibling;
-          _el$35.$$input = e => {
+          web.effect(() => _el$32.value = ghostOpacity());
+          return _el$30;
+        })(), _tmpl$10(), (() => {
+          var _el$34 = _tmpl$13(),
+            _el$35 = _el$34.firstChild,
+            _el$37 = _el$35.nextSibling;
+          _el$37.$$input = e => {
             const val = e.currentTarget.value;
             setFocusColor(val);
             localStorage.setItem('focusColor', val);
             document.documentElement.style.setProperty('--focus-color', val);
           };
-          web.effect(() => _el$35.value = focusColor());
-          return _el$32;
-        })(), _tmpl$9(), web.memo(() => Object.entries(dupeEvents()).map(([eventName, duration]) => (() => {
-          var _el$37 = _tmpl$13(),
-            _el$38 = _el$37.firstChild;
-          web.insert(_el$37, eventName, _el$38);
-          web.insert(_el$37, () => msToHHMM(duration), null);
-          return _el$37;
+          web.effect(() => _el$37.value = focusColor());
+          return _el$34;
+        })(), _tmpl$10(), web.memo(() => Object.entries(dupeEvents()).map(([eventName, duration]) => (() => {
+          var _el$39 = _tmpl$14(),
+            _el$40 = _el$39.firstChild;
+          web.insert(_el$39, eventName, _el$40);
+          web.insert(_el$39, () => msToHHMM(duration), null);
+          return _el$39;
         })()))];
-      })(), _el$16);
+      })(), _el$18);
       web.insert(_el$, web.createComponent(solidJs.Show, {
         get when() {
           return keyboardMode() !== 'normal';
@@ -18085,20 +18094,33 @@ dom.observe(document.body, () => {
                 return getLegend();
               },
               children: entry => (() => {
-                var _el$39 = _tmpl$14(),
-                  _el$40 = _el$39.firstChild;
-                web.insert(_el$40, () => entry.key);
-                web.insert(_el$39, () => entry.label, null);
-                return _el$39;
+                var _el$41 = _tmpl$15(),
+                  _el$42 = _el$41.firstChild;
+                web.insert(_el$42, () => entry.key);
+                web.insert(_el$41, () => entry.label, null);
+                return _el$41;
               })()
             }));
             return _el$15;
           })()];
         }
-      }), _el$16);
+      }), _el$18);
+      web.insert(_el$, web.createComponent(solidJs.Show, {
+        get when() {
+          return selectedCount() > 0;
+        },
+        get children() {
+          var _el$16 = _tmpl$3(),
+            _el$17 = _el$16.firstChild;
+          _el$16.style.setProperty("left", "auto");
+          _el$16.style.setProperty("right", "0");
+          web.insert(_el$16, selectedCount, _el$17);
+          return _el$16;
+        }
+      }), _el$18);
       var _ref$ = wrapperEl;
-      typeof _ref$ === "function" ? web.use(_ref$, _el$16) : wrapperEl = _el$16;
-      _el$16.style.setProperty("overflow", "auto");
+      typeof _ref$ === "function" ? web.use(_ref$, _el$18) : wrapperEl = _el$18;
+      _el$18.style.setProperty("overflow", "auto");
       web.effect(_p$ => {
         var _v$ = undoCount() === 0,
           _v$2 = undoCount() === 0 ? 0.35 : 1,
@@ -18109,7 +18131,7 @@ dom.observe(document.body, () => {
         _v$2 !== _p$.t && ((_p$.t = _v$2) != null ? _el$11.style.setProperty("opacity", _v$2) : _el$11.style.removeProperty("opacity"));
         _v$3 !== _p$.a && (_el$12.disabled = _p$.a = _v$3);
         _v$4 !== _p$.o && ((_p$.o = _v$4) != null ? _el$12.style.setProperty("opacity", _v$4) : _el$12.style.removeProperty("opacity"));
-        _v$5 !== _p$.i && ((_p$.i = _v$5) != null ? _el$16.style.setProperty("height", _v$5) : _el$16.style.removeProperty("height"));
+        _v$5 !== _p$.i && ((_p$.i = _v$5) != null ? _el$18.style.setProperty("height", _v$5) : _el$18.style.removeProperty("height"));
         return _p$;
       }, {
         e: undefined,
@@ -18144,10 +18166,10 @@ dom.observe(document.body, () => {
   const dailiesColumn = document.querySelector('.tasks-column.daily');
   if (!dailiesColumn) return false;
   web.render(() => (() => {
-    var _el$41 = _tmpl$15();
-    web.insert(_el$41, web.createComponent(TaskTools, {}), null);
-    web.insert(_el$41, web.createComponent(TaskHighlighter, {}), null);
-    return _el$41;
+    var _el$43 = _tmpl$16();
+    web.insert(_el$43, web.createComponent(TaskTools, {}), null);
+    web.insert(_el$43, web.createComponent(TaskHighlighter, {}), null);
+    return _el$43;
   })(), dailiesColumn);
   return true;
 });

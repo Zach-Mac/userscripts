@@ -12,7 +12,7 @@ import {
 } from './utils/habitica.js'
 import { getMinutesAgoString, getRoundedNow, msToHHMM } from './utils/utils.js'
 import { createSignal, Show, For } from 'solid-js'
-import { keyboardMode, eventFilter, moveSubMode } from './global.js'
+import { keyboardMode, eventFilter, moveSubMode, selectedCount } from './global.js'
 import { getLegend } from './utils/keyboard.js'
 import { TimeCalc } from './timeCalc.jsx'
 import { TaskTools } from './taskTools.jsx'
@@ -295,6 +295,12 @@ const initCalendar = observe(document.body, () => {
                                 </span>
                             )}
                         </For>
+                    </div>
+                </Show>
+
+                <Show when={selectedCount() > 0}>
+                    <div class="mode-indicator" style={{ left: 'auto', right: '0' }}>
+                        {selectedCount()} selected
                     </div>
                 </Show>
 

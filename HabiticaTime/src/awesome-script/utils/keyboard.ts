@@ -11,7 +11,7 @@ import {
     focusedEventId,
     setFocusedEventId
 } from '../global'
-import { selectEvents, deselectEvents } from './selection'
+import { selectEvents, deselectEvents, getSelectedEvents, refreshSelectedCount } from './selection'
 import { isFinished } from './reschedule'
 import { pushUndo, undo, redo } from './history'
 import { parseTime } from './utils'
@@ -88,13 +88,6 @@ function jumpFocus(position: 'first' | 'last'): void {
 
 // --- Selection management ---
 
-let rangeAnchorId: string | null = null
-
-function getSelectedEvents(): EventApi[] {
-    if (!state.calendar) return []
-    return state.calendar.getEvents().filter(e => e.extendedProps.selected)
-}
-
 function toggleSelectFocused(): void {
     if (!state.calendar) return
     const id = focusedEventId()
@@ -107,39 +100,33 @@ function toggleSelectFocused(): void {
         deselectEvents([event])
     } else {
         selectEvents([event])
-        if (!rangeAnchorId) rangeAnchorId = id
     }
     state.calendar.resumeRendering()
 }
 
-function rangeSelect(direction: 1 | -1): void {
+function selectAndMove(direction: 1 | -1): void {
     if (!state.calendar) return
-    const sorted = getSortedEvents()
-    const filtered = getFilteredEvents(sorted)
-    if (filtered.length === 0) return
 
+    // Select current focused event
+    const currentId = focusedEventId()
+    if (currentId) {
+        const current = state.calendar.getEventById(currentId)
+        if (current && !current.extendedProps.selected) {
+            selectEvents([current])
+        }
+    }
+
+    // Move focus
     moveFocus(direction)
 
-    const focusId = focusedEventId()
-    if (!focusId) return
-
-    if (!rangeAnchorId) rangeAnchorId = focusId
-
-    const anchorIndex = filtered.findIndex(e => e.id === rangeAnchorId)
-    const focusIndex = filtered.findIndex(e => e.id === focusId)
-    if (anchorIndex === -1 || focusIndex === -1) return
-
-    const start = Math.min(anchorIndex, focusIndex)
-    const end = Math.max(anchorIndex, focusIndex)
-
-    const inRange = new Set(filtered.slice(start, end + 1).map(e => e.id))
-
-    state.calendar.pauseRendering()
-    const toSelect = filtered.slice(start, end + 1).filter(e => !e.extendedProps.selected)
-    if (toSelect.length > 0) selectEvents(toSelect)
-    const toDeselect = filtered.filter(e => e.extendedProps.selected && !inRange.has(e.id))
-    if (toDeselect.length > 0) deselectEvents(toDeselect)
-    state.calendar.resumeRendering()
+    // Select newly focused event
+    const newId = focusedEventId()
+    if (newId) {
+        const newEvent = state.calendar.getEventById(newId)
+        if (newEvent && !newEvent.extendedProps.selected) {
+            selectEvents([newEvent])
+        }
+    }
 }
 
 export function handleCtrlClick(event: EventApi): void {
@@ -166,7 +153,6 @@ function clearSelection(): void {
         deselectEvents(selected)
         state.calendar.resumeRendering()
     }
-    rangeAnchorId = null
 }
 
 export function clearSelectionAndFocus(): void {
@@ -241,6 +227,7 @@ function deleteSelectedEvents(): void {
         for (const event of selected) {
             event.remove()
         }
+        refreshSelectedCount()
     }
 }
 
@@ -560,15 +547,15 @@ const bindings: KeyBinding[] = [
         mode: 'select',
         key: ['j', 'J'],
         shift: true,
-        label: 'range next',
-        handler: () => rangeSelect(1)
+        label: 'select + next',
+        handler: () => selectAndMove(1)
     },
     {
         mode: 'select',
         key: ['k', 'K'],
         shift: true,
-        label: 'range prev',
-        handler: () => rangeSelect(-1)
+        label: 'select + prev',
+        handler: () => selectAndMove(-1)
     },
     {
         mode: 'select',
