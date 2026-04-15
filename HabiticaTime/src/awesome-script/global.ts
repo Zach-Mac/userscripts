@@ -3,7 +3,7 @@ import Color from 'color'
 import { createSignal } from 'solid-js'
 
 export type KeyboardMode = 'normal' | 'select' | 'move'
-export type MoveSubMode = 'push' | 'swap' | 'overlap'
+export type MoveSubMode = 'push' | 'swap' | 'overlap' | 'resize'
 export type EventFilter = 'all' | 'unfinished' | 'finished'
 
 export const [keyboardMode, setKeyboardMode] = createSignal<KeyboardMode>('normal')

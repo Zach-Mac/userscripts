@@ -16015,20 +16015,23 @@ function toggleSelectGroup(buildFn) {
   state.calendar.resumeRendering();
 }
 
-// --- Ensure selection (select focused if nothing selected) ---
+// --- Target events: selected if any, otherwise just the focused event ---
 
-function ensureSelection() {
-  if (getSelectedEvents().length > 0) return true;
-  toggleSelectFocused();
-  return getSelectedEvents().length > 0;
+function getTargetEvents() {
+  const selected = getSelectedEvents();
+  if (selected.length > 0) return selected;
+  if (!state.calendar) return [];
+  const id = focusedEventId();
+  if (!id) return [];
+  const event = state.calendar.getEventById(id);
+  return event ? [event] : [];
 }
 
 // --- Snap to 5m grid ---
 
 function snapToGrid() {
   if (!state.calendar) return;
-  if (!ensureSelection()) return;
-  const selected = getSelectedEvents();
+  const selected = getTargetEvents();
   const needsSnap = selected.some(e => e.start.getTime() % FIVE_MIN !== 0);
   if (!needsSnap) return;
   pushUndo(state.calendar);
@@ -16049,8 +16052,8 @@ function snapToGrid() {
 
 function deleteSelectedEvents() {
   if (!state.calendar) return;
-  if (!ensureSelection()) return;
-  const selected = getSelectedEvents();
+  const selected = getTargetEvents();
+  if (selected.length === 0) return;
   const names = selected.map(e => e.title).join(', ');
   const msg = selected.length === 1 ? `Delete event "${selected[0].title}"?` : `Delete ${selected.length} events (${names})?`;
   if (confirm(msg)) {
@@ -16065,7 +16068,7 @@ function deleteSelectedEvents() {
 // --- Enter move mode (select focused if nothing selected) ---
 
 function enterMoveMode(subMode) {
-  if (!ensureSelection()) return;
+  if (getTargetEvents().length === 0) return;
   setKeyboardMode('move');
   setMoveSubMode(subMode);
 }
@@ -16074,7 +16077,7 @@ function enterMoveMode(subMode) {
 
 const FIVE_MIN = 5 * 60 * 1000;
 function getSelectionBlock() {
-  const events = getSelectedEvents().sort((a, b) => a.start.getTime() - b.start.getTime());
+  const events = getTargetEvents().sort((a, b) => a.start.getTime() - b.start.getTime());
   if (events.length === 0) return null;
   const blockStart = Math.min(...events.map(e => e.start.getTime()));
   const blockEnd = Math.max(...events.map(e => e.end.getTime()));
@@ -16326,6 +16329,43 @@ function moveSwap(direction) {
   calendar.resumeRendering();
 }
 
+// --- Resize mode ---
+
+function moveResize(direction, startEdge) {
+  if (!state.calendar) return;
+  const selected = getTargetEvents();
+  if (selected.length === 0) return;
+  const bounds = getCalendarBounds();
+
+  // Pick the shortest event — resizing it lets groupId propagate safely
+  const shortest = selected.reduce((a, b) => {
+    const aDur = a.end.getTime() - a.start.getTime();
+    const bDur = b.end.getTime() - b.start.getTime();
+    return bDur < aDur ? b : a;
+  });
+  const offset = direction * FIVE_MIN;
+  pushUndo(state.calendar);
+  state.calendar.pauseRendering();
+  if (startEdge) {
+    const newStart = shortest.start.getTime() + offset;
+    if (newStart < bounds.minMs || newStart >= shortest.end.getTime()) {
+      state.calendar.resumeRendering();
+      undo(state.calendar);
+      return;
+    }
+    shortest.setDates(new Date(newStart), shortest.end);
+  } else {
+    const newEnd = shortest.end.getTime() + offset;
+    if (newEnd > bounds.maxMs || newEnd <= shortest.start.getTime()) {
+      state.calendar.resumeRendering();
+      undo(state.calendar);
+      return;
+    }
+    shortest.setDates(shortest.start, new Date(newEnd));
+  }
+  state.calendar.resumeRendering();
+}
+
 // --- Key binding registry (single source of truth for handler + legend) ---
 
 const bindings = [
@@ -16362,6 +16402,13 @@ const bindings = [
   label: 'swap mode',
   handler: () => {
     if (getSelectedEvents().length > 0) enterMoveMode('swap');
+  }
+}, {
+  mode: 'normal',
+  key: 't',
+  label: 'resize mode',
+  handler: () => {
+    if (getSelectedEvents().length > 0) enterMoveMode('resize');
   }
 }, {
   mode: 'normal',
@@ -16466,6 +16513,11 @@ const bindings = [
   handler: () => enterMoveMode('swap')
 }, {
   mode: 'select',
+  key: 't',
+  label: 'resize mode',
+  handler: () => enterMoveMode('resize')
+}, {
+  mode: 'select',
   key: 'c',
   label: 'clear selection',
   handler: () => clearSelection()
@@ -16474,6 +16526,17 @@ const bindings = [
   key: [EXIT_KEY, 'v'],
   label: 'exit',
   handler: () => {
+    focusEvent(null);
+    setEventFilter('all');
+    setKeyboardMode('normal');
+  }
+}, {
+  mode: ['select', 'move'],
+  key: EXIT_KEY,
+  shift: true,
+  label: 'exit + deselect',
+  handler: () => {
+    clearSelection();
     focusEvent(null);
     setEventFilter('all');
     setKeyboardMode('normal');
@@ -16551,22 +16614,40 @@ const bindings = [
   key: 'j',
   label: () => {
     const sub = moveSubMode();
+    if (sub === 'resize') return 'extend end';
     return sub === 'push' ? 'push down' : sub === 'overlap' ? 'overlap down' : 'swap down';
   },
   handler: () => {
     const sub = moveSubMode();
-    if (sub === 'push') movePush(1, false);else if (sub === 'overlap') movePush(1, true);else moveSwap(1);
+    if (sub === 'push') movePush(1, false);else if (sub === 'overlap') movePush(1, true);else if (sub === 'resize') moveResize(1, false);else moveSwap(1);
   }
 }, {
   mode: 'move',
   key: 'k',
   label: () => {
     const sub = moveSubMode();
+    if (sub === 'resize') return 'shrink end';
     return sub === 'push' ? 'push up' : sub === 'overlap' ? 'overlap up' : 'swap up';
   },
   handler: () => {
     const sub = moveSubMode();
-    if (sub === 'push') movePush(-1, false);else if (sub === 'overlap') movePush(-1, true);else moveSwap(-1);
+    if (sub === 'push') movePush(-1, false);else if (sub === 'overlap') movePush(-1, true);else if (sub === 'resize') moveResize(-1, false);else moveSwap(-1);
+  }
+}, {
+  mode: 'move',
+  key: ['j', 'J'],
+  shift: true,
+  label: () => moveSubMode() === 'resize' ? 'shrink start' : 'extend end',
+  handler: () => {
+    if (moveSubMode() === 'resize') moveResize(1, true);
+  }
+}, {
+  mode: 'move',
+  key: ['k', 'K'],
+  shift: true,
+  label: () => moveSubMode() === 'resize' ? 'extend start' : 'shrink start',
+  handler: () => {
+    if (moveSubMode() === 'resize') moveResize(-1, true);
   }
 }, {
   mode: 'move',
@@ -16583,6 +16664,11 @@ const bindings = [
   key: 's',
   label: 'swap mode',
   handler: () => setMoveSubMode('swap')
+}, {
+  mode: 'move',
+  key: 't',
+  label: 'resize mode',
+  handler: () => setMoveSubMode('resize')
 }, {
   mode: 'move',
   key: 'c',

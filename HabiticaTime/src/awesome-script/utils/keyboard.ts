@@ -201,20 +201,23 @@ function toggleSelectGroup(buildFn: (events: EventApi[]) => EventApi[][]): void 
     state.calendar.resumeRendering()
 }
 
-// --- Ensure selection (select focused if nothing selected) ---
+// --- Target events: selected if any, otherwise just the focused event ---
 
-function ensureSelection(): boolean {
-    if (getSelectedEvents().length > 0) return true
-    toggleSelectFocused()
-    return getSelectedEvents().length > 0
+function getTargetEvents(): EventApi[] {
+    const selected = getSelectedEvents()
+    if (selected.length > 0) return selected
+    if (!state.calendar) return []
+    const id = focusedEventId()
+    if (!id) return []
+    const event = state.calendar.getEventById(id)
+    return event ? [event] : []
 }
 
 // --- Snap to 5m grid ---
 
 function snapToGrid(): void {
     if (!state.calendar) return
-    if (!ensureSelection()) return
-    const selected = getSelectedEvents()
+    const selected = getTargetEvents()
 
     const needsSnap = selected.some(e => e.start.getTime() % FIVE_MIN !== 0)
     if (!needsSnap) return
@@ -237,8 +240,8 @@ function snapToGrid(): void {
 
 function deleteSelectedEvents(): void {
     if (!state.calendar) return
-    if (!ensureSelection()) return
-    const selected = getSelectedEvents()
+    const selected = getTargetEvents()
+    if (selected.length === 0) return
 
     const names = selected.map(e => e.title).join(', ')
     const msg =
@@ -257,8 +260,8 @@ function deleteSelectedEvents(): void {
 
 // --- Enter move mode (select focused if nothing selected) ---
 
-function enterMoveMode(subMode: 'push' | 'swap' | 'overlap'): void {
-    if (!ensureSelection()) return
+function enterMoveMode(subMode: 'push' | 'swap' | 'overlap' | 'resize'): void {
+    if (getTargetEvents().length === 0) return
     setKeyboardMode('move')
     setMoveSubMode(subMode)
 }
@@ -272,7 +275,7 @@ function getSelectionBlock(): {
     blockStart: number
     blockEnd: number
 } | null {
-    const events = getSelectedEvents().sort((a, b) => a.start.getTime() - b.start.getTime())
+    const events = getTargetEvents().sort((a, b) => a.start.getTime() - b.start.getTime())
     if (events.length === 0) return null
     const blockStart = Math.min(...events.map(e => e.start.getTime()))
     const blockEnd = Math.max(...events.map(e => e.end.getTime()))
@@ -552,6 +555,48 @@ function moveSwap(direction: 1 | -1): void {
     calendar.resumeRendering()
 }
 
+// --- Resize mode ---
+
+function moveResize(direction: 1 | -1, startEdge: boolean): void {
+    if (!state.calendar) return
+    const selected = getTargetEvents()
+    if (selected.length === 0) return
+
+    const bounds = getCalendarBounds()
+
+    // Pick the shortest event — resizing it lets groupId propagate safely
+    const shortest = selected.reduce((a, b) => {
+        const aDur = a.end.getTime() - a.start.getTime()
+        const bDur = b.end.getTime() - b.start.getTime()
+        return bDur < aDur ? b : a
+    })
+
+    const offset = direction * FIVE_MIN
+
+    pushUndo(state.calendar)
+    state.calendar.pauseRendering()
+
+    if (startEdge) {
+        const newStart = shortest.start.getTime() + offset
+        if (newStart < bounds.minMs || newStart >= shortest.end.getTime()) {
+            state.calendar.resumeRendering()
+            undo(state.calendar)
+            return
+        }
+        shortest.setDates(new Date(newStart), shortest.end)
+    } else {
+        const newEnd = shortest.end.getTime() + offset
+        if (newEnd > bounds.maxMs || newEnd <= shortest.start.getTime()) {
+            state.calendar.resumeRendering()
+            undo(state.calendar)
+            return
+        }
+        shortest.setDates(shortest.start, new Date(newEnd))
+    }
+
+    state.calendar.resumeRendering()
+}
+
 // --- Key binding registry (single source of truth for handler + legend) ---
 
 interface KeyBinding {
@@ -602,6 +647,14 @@ const bindings: KeyBinding[] = [
         label: 'swap mode',
         handler: () => {
             if (getSelectedEvents().length > 0) enterMoveMode('swap')
+        }
+    },
+    {
+        mode: 'normal',
+        key: 't',
+        label: 'resize mode',
+        handler: () => {
+            if (getSelectedEvents().length > 0) enterMoveMode('resize')
         }
     },
     {
@@ -725,6 +778,12 @@ const bindings: KeyBinding[] = [
     },
     {
         mode: 'select',
+        key: 't',
+        label: 'resize mode',
+        handler: () => enterMoveMode('resize')
+    },
+    {
+        mode: 'select',
         key: 'c',
         label: 'clear selection',
         handler: () => clearSelection()
@@ -734,6 +793,19 @@ const bindings: KeyBinding[] = [
         key: [EXIT_KEY, 'v'],
         label: 'exit',
         handler: () => {
+            focusEvent(null)
+            setEventFilter('all')
+            setKeyboardMode('normal')
+        }
+    },
+
+    {
+        mode: ['select', 'move'],
+        key: EXIT_KEY,
+        shift: true,
+        label: 'exit + deselect',
+        handler: () => {
+            clearSelection()
             focusEvent(null)
             setEventFilter('all')
             setKeyboardMode('normal')
@@ -817,12 +889,14 @@ const bindings: KeyBinding[] = [
         key: 'j',
         label: () => {
             const sub = moveSubMode()
+            if (sub === 'resize') return 'extend end'
             return sub === 'push' ? 'push down' : sub === 'overlap' ? 'overlap down' : 'swap down'
         },
         handler: () => {
             const sub = moveSubMode()
             if (sub === 'push') movePush(1, false)
             else if (sub === 'overlap') movePush(1, true)
+            else if (sub === 'resize') moveResize(1, false)
             else moveSwap(1)
         }
     },
@@ -831,13 +905,33 @@ const bindings: KeyBinding[] = [
         key: 'k',
         label: () => {
             const sub = moveSubMode()
+            if (sub === 'resize') return 'shrink end'
             return sub === 'push' ? 'push up' : sub === 'overlap' ? 'overlap up' : 'swap up'
         },
         handler: () => {
             const sub = moveSubMode()
             if (sub === 'push') movePush(-1, false)
             else if (sub === 'overlap') movePush(-1, true)
+            else if (sub === 'resize') moveResize(-1, false)
             else moveSwap(-1)
+        }
+    },
+    {
+        mode: 'move',
+        key: ['j', 'J'],
+        shift: true,
+        label: () => (moveSubMode() === 'resize' ? 'shrink start' : 'extend end'),
+        handler: () => {
+            if (moveSubMode() === 'resize') moveResize(1, true)
+        }
+    },
+    {
+        mode: 'move',
+        key: ['k', 'K'],
+        shift: true,
+        label: () => (moveSubMode() === 'resize' ? 'extend start' : 'shrink start'),
+        handler: () => {
+            if (moveSubMode() === 'resize') moveResize(-1, true)
         }
     },
     {
@@ -857,6 +951,12 @@ const bindings: KeyBinding[] = [
         key: 's',
         label: 'swap mode',
         handler: () => setMoveSubMode('swap')
+    },
+    {
+        mode: 'move',
+        key: 't',
+        label: 'resize mode',
+        handler: () => setMoveSubMode('resize')
     },
     {
         mode: 'move',
