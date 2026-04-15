@@ -11,8 +11,9 @@ import {
     refreshEventColors
 } from './utils/habitica.js'
 import { getMinutesAgoString, getRoundedNow, msToHHMM } from './utils/utils.js'
-import { createSignal, Show } from 'solid-js'
+import { createSignal, Show, For } from 'solid-js'
 import { keyboardMode, eventFilter, moveSubMode } from './global.js'
+import { getLegend } from './utils/keyboard.js'
 import { TimeCalc } from './timeCalc.jsx'
 import { TaskTools } from './taskTools.jsx'
 import { TaskHighlighter } from './taskHighlighter.jsx'
@@ -30,6 +31,8 @@ const [finishedMode, setFinishedMode] = createSignal<FinishedMode>(
     (localStorage.getItem('finishedMode') as FinishedMode) || 'move'
 )
 const [ghostOpacity, setGhostOpacity] = createSignal(state.ghostOpacity)
+const [focusColor, setFocusColor] = createSignal(localStorage.getItem('focusColor') || '#39ff14')
+document.documentElement.style.setProperty('--focus-color', focusColor())
 
 function playSound(url) {
     const audio = new Audio(url)
@@ -251,6 +254,20 @@ const initCalendar = observe(document.body, () => {
                             />
                         </label>
                         <br />
+                        <label>
+                            Focus color:{' '}
+                            <input
+                                type="color"
+                                value={focusColor()}
+                                onInput={e => {
+                                    const val = e.currentTarget.value
+                                    setFocusColor(val)
+                                    localStorage.setItem('focusColor', val)
+                                    document.documentElement.style.setProperty('--focus-color', val)
+                                }}
+                            />
+                        </label>
+                        <br />
 
                         {/* display dupeEvents */}
                         {Object.entries(dupeEvents()).map(([eventName, duration]) => (
@@ -268,6 +285,16 @@ const initCalendar = observe(document.body, () => {
                                 ? '-- SELECT --'
                                 : `-- SELECT (${eventFilter()}) --`
                             : `-- MOVE (${moveSubMode()}) --`}
+                    </div>
+                    <div class="key-legend">
+                        <For each={getLegend()}>
+                            {entry => (
+                                <span class="key-legend-entry">
+                                    <span class="key-legend-key">{entry.key}</span>
+                                    {entry.label}
+                                </span>
+                            )}
+                        </For>
                     </div>
                 </Show>
 

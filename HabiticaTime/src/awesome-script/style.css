@@ -49,8 +49,8 @@
 
 /* Focused event ring in select mode */
 .focused-event {
-    outline: 2px solid #4f2a93;
-    outline-offset: -1px;
+    outline: 3px solid var(--focus-color, #39ff14);
+    outline-offset: -2px;
     z-index: 2;
 }
 
@@ -68,4 +68,34 @@
     border-radius: 3px;
     letter-spacing: 0.5px;
     pointer-events: none;
+}
+
+/* Key legend — fixed top-right overlay */
+.key-legend {
+    position: fixed;
+    top: 8px;
+    right: 8px;
+    z-index: 10000;
+    font-family: monospace;
+    font-size: 11px;
+    color: #fff;
+    background: rgba(34, 17, 60, 0.9);
+    padding: 6px 10px;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    pointer-events: none;
+}
+.key-legend-entry {
+    white-space: nowrap;
+}
+.key-legend-key {
+    display: inline-block;
+    min-width: 48px;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 0 4px;
+    border-radius: 2px;
+    margin-right: 4px;
+    text-align: center;
 }

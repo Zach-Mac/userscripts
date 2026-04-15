@@ -20,23 +20,30 @@ Enter by pressing `m` (push/overlap mode) or `s` (swap/jump mode). Move the sele
 ## Mode Transitions
 
 ```
-Normal --v--> Select --m--> Move (push/overlap)
+Normal --v--> Select --p--> Move (push)
+                    \--m--> Move (overlap)
                     \--s--> Move (swap/jump)
 
-Normal --m--> Move (push)    (only with existing selection)
-Normal --s--> Move (swap)    (only with existing selection)
+Normal --p--> Move (push)      (only with existing selection)
+Normal --m--> Move (overlap)   (only with existing selection)
+Normal --s--> Move (swap)      (only with existing selection)
 
 Select --Escape--> Normal  (keeps selection, clears focus + filter)
+Select --c-------> Select  (clears selection, stays in select mode)
 Move   --Escape--> Select  (keeps selection, stops moving)
 Move   --v------> Select   (keeps selection, stops moving)
-Move(push) --s--> Move(swap)   (switch move sub-mode, keep selection)
-Move(swap) --m--> Move(push)   (switch move sub-mode, keep selection)
+Move   --c------> Select   (clears selection + stops moving)
+Move(push) --s--> Move(swap)      (switch sub-mode, keep selection)
+Move(push) --m--> Move(overlap)   (switch sub-mode, keep selection)
+Move(swap) --p--> Move(push)      (switch sub-mode, keep selection)
+etc. (p/m/s freely switch between push/overlap/swap in move mode)
 ```
 
 ## Normal Mode
 
 - `v` — Enter select mode.
-- `m` — Enter push/overlap move mode (requires existing selection).
+- `p` — Enter push move mode (requires existing selection).
+- `m` — Enter overlap move mode (requires existing selection).
 - `s` — Enter swap/jump move mode (requires existing selection).
 - `Escape` — Clear selection (if any events are selected).
 - `Ctrl+click` on event — Toggle-select that event (does not enter select mode).
@@ -55,11 +62,11 @@ Move(swap) --m--> Move(push)   (switch move sub-mode, keep selection)
 - Ghost-pinned and solid-pinned events are included in navigation.
 
 ### Event Filter
-While in select mode, cycle which events are navigable:
+While in select mode, press `f` then a second key to set the filter:
 
-- `a` — All events (default).
-- `u` — Only unfinished events.
-- `f` — Only finished events.
+- `fa` — All events (default).
+- `ff` — Only finished events.
+- `fu` — Only unfinished events.
 
 The filter affects `j`/`k`/`g`/`G` navigation — filtered-out events are skipped. The current filter is shown in the mode indicator (e.g. `-- SELECT (unfinished) --`).
 
@@ -71,11 +78,15 @@ Selected events that become filtered out **stay selected** — the filter only a
 - `Space` or `Enter` — Toggle-select the focused event (additive, like ctrl-click).
 - `Shift+j` / `Shift+k` — Extend selection range from the first selected event through the focused event (spreadsheet-style range select).
 
+### Clearing Selection
+- `c` — Clear selection (deselect all). Stays in select mode with focus preserved.
+
 ### Deleting
 - `d` or `Delete` — Delete selected events (with confirmation prompt). If nothing is selected, selects the focused event first then deletes.
 
 ### Entering Move Mode
-- `m` — Enter push/overlap move mode. If nothing is selected, selects the focused event first.
+- `p` — Enter push move mode. If nothing is selected, selects the focused event first.
+- `m` — Enter overlap move mode. If nothing is selected, selects the focused event first.
 - `s` — Enter swap/jump move mode. If nothing is selected, selects the focused event first.
 
 ### Mouse Integration (works in any mode)
@@ -91,14 +102,14 @@ Selection uses the same underlying selection logic as the existing rectangle-sel
 ## Move Mode
 
 ### Entering
-- `m` — Enter **push/overlap mode** (5-minute increments).
+- `p` — Enter **push mode** (5-minute increments, pushes neighbors).
+- `m` — Enter **overlap mode** (5-minute increments, moves through events freely).
 - `s` — Enter **swap/jump mode** (event-length increments).
 
-In both cases, if nothing is selected, the focused event is automatically selected first.
+In all cases, if nothing is selected, the focused event is automatically selected first.
 
 ### Switching Sub-modes
-- `m` while in swap/jump mode — Switch to push/overlap mode.
-- `s` while in push/overlap mode — Switch to swap/jump mode.
+- `p`/`m`/`s` freely switch between push/overlap/swap while in move mode.
 Selection and position are preserved across switches.
 
 ### Pinned Events in Selection
@@ -107,20 +118,27 @@ Selected pinned events move with the group as if they were unpinned. This applie
 ### Multi-select Grouping
 When multiple events are selected, they move as a single block — as if it were one event spanning from the earliest start time to the latest end time. Internal spacing between selected events is preserved.
 
-### Push/Overlap Mode (`m`)
+### Push Mode (`p`)
 
-The selected group moves in 5-minute increments:
+The selected group moves in 5-minute increments, pushing neighbors:
 
 - `j` — Move group 5 minutes later (down).
 - `k` — Move group 5 minutes earlier (up).
 
-**Collision behavior — push by default, hold Alt to overlap:**
-- `j`/`k` (push): When the group contacts another event, that event gets pushed along in the same direction. Chain-pushes propagate (A pushes B pushes C).
-- `Alt+j`/`Alt+k` (overlap): The group moves through other events, overlapping freely.
+When the group contacts another event, that event gets pushed along in the same direction. Chain-pushes propagate (A pushes B pushes C).
 
-**Pinned event behavior (push mode, for non-selected pinned events):**
+**Pinned event behavior (for non-selected pinned events):**
 - Solid-pinned events cannot be pushed. The moving group jumps to the other side of the pinned event.
 - Ghost-pinned events are ignored entirely (group moves through them).
+
+### Overlap Mode (`m`)
+
+The selected group moves in 5-minute increments, overlapping freely:
+
+- `j` — Move group 5 minutes later (down).
+- `k` — Move group 5 minutes earlier (up).
+
+The group moves through other events without pushing them.
 
 ### Swap/Jump Mode (`s`)
 
@@ -147,6 +165,9 @@ The selected group moves in event-length steps:
 - Solid-pinned events cannot be swapped. Jump skips over them to the next non-pinned event.
 - Ghost-pinned events are ignored (invisible to jump/swap logic).
 
+### Clearing Selection
+- `c` — Clear selection and return to select mode.
+
 ### Exiting
 - `Escape` — Return to select mode (selection preserved, can re-enter move mode or modify selection).
 - `v` — Same as Escape (return to select mode).
@@ -171,6 +192,7 @@ Overlay positioned at the top-left of the calendar, above the calendar wrapper a
 - `-- SELECT (unfinished) --`
 - `-- SELECT (finished) --`
 - `-- MOVE (push) --`
+- `-- MOVE (overlap) --`
 - `-- MOVE (swap) --`
 
 Hidden in normal mode. Does not cause layout shift (absolutely positioned, pointer-events: none).
@@ -189,7 +211,7 @@ These shortcuts are already registered and must not conflict:
 - `ctrl-alt-e` — Task tools toggle
 - `ctrl-alt-h` — Task highlighter toggle
 
-The new keys (`v`, `m`, `s`, `j`, `k`, `g`, `G`, `a`, `u`, `f`, `d`, `Delete`, `Space`, `Enter`, `Escape`, `Shift+j/k`, `Alt+j/k`) are all unmodified or lightly modified single keys, which are only active in their respective modes — no conflicts.
+The new keys (`v`, `p`, `m`/`o`, `s`, `c`, `j`, `k`, `g`, `G`, `fa`/`ff`/`fu`, `d`, `Delete`, `Space`, `Enter`, `Escape`, `Shift+j/k`) are all unmodified or lightly modified single keys, which are only active in their respective modes — no conflicts.
 
 ## Edge Cases
 
