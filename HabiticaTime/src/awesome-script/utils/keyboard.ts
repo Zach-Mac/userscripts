@@ -14,7 +14,7 @@ import {
     setLegendHidden
 } from '../global'
 import { selectEvents, deselectEvents, getSelectedEvents, refreshSelectedCount } from './selection'
-import { isFinished } from './reschedule'
+import { isFinished, buildOverlapGroups, buildClusters } from './reschedule'
 import { pushUndo, undo, redo } from './history'
 import { parseTime } from './utils'
 
@@ -177,6 +177,28 @@ function handleFilterChange(filter: 'all' | 'unfinished' | 'finished'): void {
         const closest = findClosestEventToNow(filtered)
         focusEvent(closest ? closest.id : filtered[0].id)
     }
+}
+
+// --- Select around focused event ---
+
+function toggleSelectGroup(buildFn: (events: EventApi[]) => EventApi[][]): void {
+    if (!state.calendar) return
+    const id = focusedEventId()
+    if (!id) return
+    const sorted = getSortedEvents()
+    const groups = buildFn(sorted)
+    const group = groups.find(g => g.some(e => e.id === id))
+    if (!group) return
+
+    const allSelected = group.every(e => e.extendedProps.selected)
+    state.calendar.pauseRendering()
+    if (allSelected) {
+        deselectEvents(group)
+    } else {
+        const toSelect = group.filter(e => !e.extendedProps.selected)
+        selectEvents(toSelect)
+    }
+    state.calendar.resumeRendering()
 }
 
 // --- Ensure selection (select focused if nothing selected) ---
@@ -643,6 +665,20 @@ const bindings: KeyBinding[] = [
         handler: () => deleteSelectedEvents()
     },
     {
+        mode: 'select',
+        key: ['o', 'c'],
+        prefix: 'a',
+        label: 'select overlapping',
+        handler: () => toggleSelectGroup(buildOverlapGroups)
+    },
+    {
+        mode: 'select',
+        key: ['b', 'p'],
+        prefix: 'a',
+        label: 'select cluster',
+        handler: () => toggleSelectGroup(buildClusters)
+    },
+    {
         mode: ['select', 'move'],
         key: 'r',
         label: 'snap to 5m grid',
@@ -701,6 +737,69 @@ const bindings: KeyBinding[] = [
             focusEvent(null)
             setEventFilter('all')
             setKeyboardMode('normal')
+        }
+    },
+
+    // --- Arrow key scrolling (select + move) ---
+    {
+        mode: ['select', 'move'],
+        key: 'ArrowDown',
+        label: 'scroll down',
+        handler: () => {
+            const wrapper = document.getElementById('calendar-wrapper')
+            if (wrapper) wrapper.scrollTop += 100
+        }
+    },
+    {
+        mode: ['select', 'move'],
+        key: 'ArrowUp',
+        label: 'scroll up',
+        handler: () => {
+            const wrapper = document.getElementById('calendar-wrapper')
+            if (wrapper) wrapper.scrollTop -= 100
+        }
+    },
+
+    // --- Scroll to center (zz) ---
+    {
+        mode: 'select',
+        key: 'z',
+        prefix: 'z',
+        label: 'center on focus',
+        handler: () => {
+            const id = focusedEventId()
+            if (!id) return
+            const el = document.querySelector(`[data-event-id="${id}"]`)
+            if (!el) return
+            const wrapper = document.getElementById('calendar-wrapper')
+            if (!wrapper) return
+            const elRect = el.getBoundingClientRect()
+            const wrapperRect = wrapper.getBoundingClientRect()
+            const elCenter = elRect.top + elRect.height / 2
+            const wrapperCenter = wrapperRect.top + wrapperRect.height / 2
+            wrapper.scrollTop += elCenter - wrapperCenter
+        }
+    },
+    {
+        mode: 'move',
+        key: 'z',
+        prefix: 'z',
+        label: 'center on selection',
+        handler: () => {
+            const block = getSelectionBlock()
+            if (!block) return
+            const midMs = (block.blockStart + block.blockEnd) / 2
+            // Find the event element closest to midpoint
+            const midnight = new Date()
+            midnight.setHours(0, 0, 0, 0)
+            const midTimeMs = midMs - midnight.getTime()
+            if (state.scrollToTime) {
+                // scrollToTime puts time at top; offset by half wrapper height
+                const wrapper = document.getElementById('calendar-wrapper')
+                if (!wrapper) return
+                state.scrollToTime(midTimeMs)
+                wrapper.scrollTop -= wrapper.clientHeight / 2
+            }
         }
     },
 
@@ -845,6 +944,10 @@ export function getLegend(): LegendEntry[] {
             else if (k === 'backspace') name = 'Bksp'
             else if (k === 'delete') name = 'Del'
             else if (k === 'enter') name = 'CR'
+            else if (k === 'arrowup') name = '↑'
+            else if (k === 'arrowdown') name = '↓'
+            else if (k === 'arrowleft') name = '←'
+            else if (k === 'arrowright') name = '→'
 
             // Vim-style modifier notation: <C-z>, <C-S-z>, etc.
             const mods: string[] = []

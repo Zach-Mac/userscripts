@@ -90,6 +90,15 @@ Events can be pinned to prevent catchup/reschedule from moving them. Pin state i
 
 Pin cycling is handled by `cyclePinType()` in `utils/events.ts`. Visual styling uses FullCalendar's `eventClassNames` callback (adds `.ghost-pin` class) with a `--ghost-opacity` CSS variable on the calendar element.
 
+## Event Grouping Terminology
+
+Two distinct grouping concepts in `utils/reschedule.ts`:
+
+- **Overlap group** (`buildOverlapGroups()`): Events that directly overlap in time (event B starts before event A ends). Strict temporal overlap — no gap tolerance.
+- **Cluster** (`buildClusters()`): Events within 5 minutes of each other, treated as a continuous block. Gaps <5m are bridged. Used by squeeze to identify "NOW-group" and adjacent groups.
+
+Both take sorted events and return arrays of `Cluster` (which is `EventApi[]`). Helper functions: `getClusterStart()`, `getClusterEnd()`, `shiftCluster()`.
+
 ## Catchup & Squeeze
 
 **Catchup** (`catchupEvents` in `utils/reschedule.ts`):

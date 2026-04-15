@@ -29,9 +29,9 @@ function findPlacementAvoidingSolidPins(
     return start
 }
 
-type Cluster = EventApi[]
+export type Cluster = EventApi[]
 
-function buildOverlapGroups(sortedEvents: EventApi[]): Cluster[] {
+export function buildOverlapGroups(sortedEvents: EventApi[]): Cluster[] {
     if (sortedEvents.length === 0) return []
 
     const groups: Cluster[] = [[sortedEvents[0]]]
@@ -231,7 +231,7 @@ export function catchupEvents(calendar: Calendar, finishedMode: FinishedMode = '
     calendar.resumeRendering()
 }
 
-function buildClusters(sortedEvents: EventApi[]): Cluster[] {
+export function buildClusters(sortedEvents: EventApi[]): Cluster[] {
     if (sortedEvents.length === 0) return []
     const FIVE_MIN = 5 * 60 * 1000
     const clusters: Cluster[] = [[sortedEvents[0]]]
