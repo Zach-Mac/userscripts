@@ -16,6 +16,7 @@ import {
     keyboardMode,
     eventFilter,
     moveSubMode,
+    resizeEdge,
     selectedCount,
     legendHidden,
     setLegendHidden
@@ -291,7 +292,9 @@ const initCalendar = observe(document.body, () => {
                             ? eventFilter() === 'all'
                                 ? '-- SELECT --'
                                 : `-- SELECT (${eventFilter()}) --`
-                            : `-- MOVE (${moveSubMode()}) --`}
+                            : moveSubMode() === 'resize'
+                              ? `-- RESIZE (${resizeEdge()}) --`
+                              : `-- MOVE (${moveSubMode()}) --`}
                     </div>
                     <div class="key-legend">
                         <button

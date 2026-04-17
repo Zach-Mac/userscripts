@@ -23,20 +23,29 @@ Enter by pressing `m` (push/overlap mode) or `s` (swap/jump mode). Move the sele
 Normal --v--> Select --p--> Move (push)
                     \--m--> Move (overlap)
                     \--s--> Move (swap/jump)
+                    \--te-> Resize (end)
+                    \--ts-> Resize (start)
 
 Normal --p--> Move (push)      (only with existing selection)
 Normal --m--> Move (overlap)   (only with existing selection)
 Normal --s--> Move (swap)      (only with existing selection)
+Normal --te-> Resize (end)     (only with existing selection)
+Normal --ts-> Resize (start)   (only with existing selection)
 
 Select --Escape--> Normal  (keeps selection, clears focus + filter)
 Select --c-------> Select  (clears selection, stays in select mode)
 Move   --Escape--> Select  (keeps selection, stops moving)
 Move   --v------> Select   (keeps selection, stops moving)
 Move   --c------> Select   (clears selection + stops moving)
+Resize --Escape--> Select  (keeps selection, stops resizing)
+Resize --v------> Select   (keeps selection, stops resizing)
+Resize --c------> Select   (clears selection + stops resizing)
 Move(push) --s--> Move(swap)      (switch sub-mode, keep selection)
 Move(push) --m--> Move(overlap)   (switch sub-mode, keep selection)
 Move(swap) --p--> Move(push)      (switch sub-mode, keep selection)
 etc. (p/m/s freely switch between push/overlap/swap in move mode)
+Resize(end) --s--> Resize(start)  (switch active edge)
+Resize(start) --e--> Resize(end)  (switch active edge)
 ```
 
 ## Normal Mode
@@ -45,6 +54,8 @@ etc. (p/m/s freely switch between push/overlap/swap in move mode)
 - `p` — Enter push move mode (requires existing selection).
 - `m` — Enter overlap move mode (requires existing selection).
 - `s` — Enter swap/jump move mode (requires existing selection).
+- `te` — Enter resize mode, end-edge active (requires existing selection).
+- `ts` — Enter resize mode, start-edge active (requires existing selection).
 - `Escape` — Clear selection (if any events are selected).
 - `Ctrl+click` on event — Toggle-select that event (does not enter select mode).
 
@@ -94,6 +105,10 @@ Selected events that become filtered out **stay selected** — the filter only a
 - `p` — Enter push move mode. If nothing is selected, selects the focused event first.
 - `m` — Enter overlap move mode. If nothing is selected, selects the focused event first.
 - `s` — Enter swap/jump move mode. If nothing is selected, selects the focused event first.
+
+### Entering Resize Mode
+- `te` — Enter resize mode with end-edge active. If nothing is selected, selects the focused event first.
+- `ts` — Enter resize mode with start-edge active. If nothing is selected, selects the focused event first.
 
 ### Mouse Integration (works in any mode)
 - `Ctrl+click` on event — Toggle-select that event (does not change mode).
@@ -184,6 +199,67 @@ The selected group moves in event-length steps:
 - `Escape` — Return to select mode (selection preserved, can re-enter move mode or modify selection).
 - `v` — Same as Escape (return to select mode).
 
+## Resize Mode
+
+### Entering
+- `te` — Enter resize mode with **end-edge** active.
+- `ts` — Enter resize mode with **start-edge** active.
+
+In both cases, if nothing is selected, the focused event is automatically selected first.
+
+### Switching Active Edge
+- `e` — Switch to end-edge.
+- `s` — Switch to start-edge.
+
+### Resizing
+- `j` — Move the active edge 5 minutes later (extend end / shrink start).
+- `k` — Move the active edge 5 minutes earlier (shrink end / extend start).
+
+The event cannot be shrunk to zero duration — the active edge stops at the opposite edge. Resizing also stops at calendar boundaries (slotMinTime / slotMaxTime).
+
+### Resize with Push/Pull
+- `Shift+j` — Same as `j`, but also shifts the adjacent cluster on the affected side.
+- `Shift+k` — Same as `k`, but also shifts the adjacent cluster on the affected side.
+
+"Adjacent cluster" means the contiguous cluster (gap < 5 minutes) touching the resized edge. The entire cluster shifts by the same 5-minute delta as the resize.
+
+**End-edge examples:**
+```
+Extending end (Shift+j):
+Before:  [A====][B===][C===]
+After:   [A========][B===][C===]    ← A grew 5m, B+C pushed down 5m
+
+Shrinking end (Shift+k):
+Before:  [A========][B===][C===]
+After:   [A====][B===][C===]        ← A shrunk 5m, B+C pulled up 5m
+```
+
+**Start-edge examples:**
+```
+Extending start (Shift+k):
+Before:  [B===][C===][A====]
+After:   [B===][C===][A========]    ← A grew up 5m, B+C pushed up 5m
+
+Shrinking start (Shift+j):
+Before:  [B===][C===][A========]
+After:   [B===][C===][A====]        ← A shrunk up 5m, B+C pulled down 5m
+```
+
+**Pinned event behavior (for non-selected pinned events in the cluster):**
+- Solid-pinned events cannot be pushed. The cluster jumps to the other side of the pinned event.
+- Ghost-pinned events are ignored entirely (cluster moves through them).
+
+### Multi-select
+When multiple events are selected, only the shortest event is resized (to avoid groupId propagation issues). Push/pull is **disabled** for multi-select — resize is solo only.
+
+### Scrolling
+- `zz` / `zt` / `zb` — Same scrolling behavior as move mode.
+- `ArrowDown` / `ArrowUp` — Scroll the calendar view by 100px.
+
+### Exiting
+- `Escape` — Return to select mode (selection preserved).
+- `v` — Same as Escape (return to select mode).
+
 ## Visual Indicators
 
 ### Focused Event (Select Mode)
@@ -206,6 +282,8 @@ Overlay positioned at the top-left of the calendar, above the calendar wrapper a
 - `-- MOVE (push) --`
 - `-- MOVE (overlap) --`
 - `-- MOVE (swap) --`
+- `-- RESIZE (end) --`
+- `-- RESIZE (start) --`
 
 Hidden in normal mode. Does not cause layout shift (absolutely positioned, pointer-events: none).
 
@@ -223,7 +301,7 @@ These shortcuts are already registered and must not conflict:
 - `ctrl-alt-e` — Task tools toggle
 - `ctrl-alt-h` — Task highlighter toggle
 
-The new keys (`v`, `p`, `m`/`o`, `s`, `c`, `j`, `k`, `g`, `G`, `fa`/`ff`/`fu`, `zz`/`zt`/`zb`, `d`, `Delete`, `Space`, `Enter`, `Escape`, `Shift+j/k`, `ArrowDown`/`ArrowUp`) are all unmodified or lightly modified single keys, which are only active in their respective modes — no conflicts.
+The new keys (`v`, `p`, `m`/`o`, `s`, `c`, `j`, `k`, `g`, `G`, `fa`/`ff`/`fu`, `te`/`ts`, `zz`/`zt`/`zb`, `d`, `Delete`, `Space`, `Enter`, `Escape`, `Shift+j/k`, `ArrowDown`/`ArrowUp`) are all unmodified or lightly modified single keys, which are only active in their respective modes — no conflicts.
 
 ## Edge Cases
 

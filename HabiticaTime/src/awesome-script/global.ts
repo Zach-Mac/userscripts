@@ -4,10 +4,12 @@ import { createSignal } from 'solid-js'
 
 export type KeyboardMode = 'normal' | 'select' | 'move'
 export type MoveSubMode = 'push' | 'swap' | 'overlap' | 'resize'
+export type ResizeEdge = 'start' | 'end'
 export type EventFilter = 'all' | 'unfinished' | 'finished'
 
 export const [keyboardMode, setKeyboardMode] = createSignal<KeyboardMode>('normal')
 export const [moveSubMode, setMoveSubMode] = createSignal<MoveSubMode>('push')
+export const [resizeEdge, setResizeEdge] = createSignal<ResizeEdge>('end')
 export const [eventFilter, setEventFilter] = createSignal<EventFilter>('all')
 export const [focusedEventId, setFocusedEventId] = createSignal<string | null>(null)
 export const [selectedCount, setSelectedCount] = createSignal(0)

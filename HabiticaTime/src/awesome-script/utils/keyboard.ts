@@ -6,6 +6,8 @@ import {
     setKeyboardMode,
     moveSubMode,
     setMoveSubMode,
+    resizeEdge,
+    setResizeEdge,
     eventFilter,
     setEventFilter,
     focusedEventId,
@@ -260,10 +262,17 @@ function deleteSelectedEvents(): void {
 
 // --- Enter move mode (select focused if nothing selected) ---
 
-function enterMoveMode(subMode: 'push' | 'swap' | 'overlap' | 'resize'): void {
+function enterMoveMode(subMode: 'push' | 'swap' | 'overlap'): void {
     if (getTargetEvents().length === 0) return
     setKeyboardMode('move')
     setMoveSubMode(subMode)
+}
+
+function enterResizeMode(edge: 'start' | 'end'): void {
+    if (getTargetEvents().length === 0) return
+    setKeyboardMode('move')
+    setMoveSubMode('resize')
+    setResizeEdge(edge)
 }
 
 // --- Move helpers ---
@@ -370,7 +379,7 @@ function movePush(direction: 1 | -1, overlap: boolean): void {
             if (pushed.has(event.id)) continue
             const eStart = event.start.getTime()
             const eEnd = event.end.getTime()
-            if (eStart < wavefront && eEnd > newBlockStart) {
+            if (eStart < wavefront && eEnd > block.blockEnd) {
                 if (event.extendedProps.pinType === 'solid') {
                     calendar.resumeRendering()
                     undo(calendar)
@@ -384,10 +393,14 @@ function movePush(direction: 1 | -1, overlap: boolean): void {
                     return s < eEnd && en > eStart
                 })
                 const pushAmount = wavefront - eStart
-                let groupMaxEnd = eEnd + pushAmount
                 // Push the event and its overlapping group by the same amount
                 event.setDates(new Date(eStart + pushAmount), new Date(eEnd + pushAmount))
                 pushed.add(event.id)
+                if (eEnd + pushAmount > bounds.maxMs) {
+                    calendar.resumeRendering()
+                    undo(calendar)
+                    return
+                }
                 for (const g of group) {
                     if (g.extendedProps.pinType === 'solid') {
                         calendar.resumeRendering()
@@ -404,14 +417,9 @@ function movePush(direction: 1 | -1, overlap: boolean): void {
                     }
                     g.setDates(new Date(gs + pushAmount), new Date(newEnd))
                     pushed.add(g.id)
-                    if (newEnd > groupMaxEnd) groupMaxEnd = newEnd
                 }
-                if (groupMaxEnd > bounds.maxMs) {
-                    calendar.resumeRendering()
-                    undo(calendar)
-                    return
-                }
-                wavefront = groupMaxEnd
+                // Advance wavefront by trigger event's new end, not the overlap group's max
+                wavefront = eEnd + pushAmount
             }
         }
     } else {
@@ -421,7 +429,7 @@ function movePush(direction: 1 | -1, overlap: boolean): void {
             if (pushed.has(event.id)) continue
             const eStart = event.start.getTime()
             const eEnd = event.end.getTime()
-            if (eEnd > wavefront && eStart < newBlockEnd) {
+            if (eEnd > wavefront && eStart < block.blockStart) {
                 if (event.extendedProps.pinType === 'solid') {
                     calendar.resumeRendering()
                     undo(calendar)
@@ -435,10 +443,14 @@ function movePush(direction: 1 | -1, overlap: boolean): void {
                     return s < eEnd && en > eStart
                 })
                 const pushAmount = eEnd - wavefront
-                let groupMinStart = eStart - pushAmount
                 // Push the event and its overlapping group by the same amount
                 event.setDates(new Date(eStart - pushAmount), new Date(eEnd - pushAmount))
                 pushed.add(event.id)
+                if (eStart - pushAmount < bounds.minMs) {
+                    calendar.resumeRendering()
+                    undo(calendar)
+                    return
+                }
                 for (const g of group) {
                     if (g.extendedProps.pinType === 'solid') {
                         calendar.resumeRendering()
@@ -455,14 +467,9 @@ function movePush(direction: 1 | -1, overlap: boolean): void {
                     }
                     g.setDates(new Date(newStart), new Date(ge - pushAmount))
                     pushed.add(g.id)
-                    if (newStart < groupMinStart) groupMinStart = newStart
                 }
-                if (groupMinStart < bounds.minMs) {
-                    calendar.resumeRendering()
-                    undo(calendar)
-                    return
-                }
-                wavefront = groupMinStart
+                // Advance wavefront by trigger event's new start, not the overlap group's min
+                wavefront = eStart - pushAmount
             }
         }
     }
@@ -557,44 +564,171 @@ function moveSwap(direction: 1 | -1): void {
 
 // --- Resize mode ---
 
-function moveResize(direction: 1 | -1, startEdge: boolean): void {
-    if (!state.calendar) return
+function getResizeTarget(): EventApi | null {
     const selected = getTargetEvents()
-    if (selected.length === 0) return
-
-    const bounds = getCalendarBounds()
-
+    if (selected.length === 0) return null
     // Pick the shortest event — resizing it lets groupId propagate safely
-    const shortest = selected.reduce((a, b) => {
+    return selected.reduce((a, b) => {
         const aDur = a.end.getTime() - a.start.getTime()
         const bDur = b.end.getTime() - b.start.getTime()
         return bDur < aDur ? b : a
     })
+}
 
+function moveResize(direction: 1 | -1): void {
+    if (!state.calendar) return
+    const target = getResizeTarget()
+    if (!target) return
+
+    const bounds = getCalendarBounds()
+    const startEdge = resizeEdge() === 'start'
     const offset = direction * FIVE_MIN
 
     pushUndo(state.calendar)
     state.calendar.pauseRendering()
 
     if (startEdge) {
-        const newStart = shortest.start.getTime() + offset
-        if (newStart < bounds.minMs || newStart >= shortest.end.getTime()) {
+        const newStart = target.start.getTime() + offset
+        if (newStart < bounds.minMs || newStart >= target.end.getTime()) {
             state.calendar.resumeRendering()
             undo(state.calendar)
             return
         }
-        shortest.setDates(new Date(newStart), shortest.end)
+        target.setDates(new Date(newStart), target.end)
     } else {
-        const newEnd = shortest.end.getTime() + offset
-        if (newEnd > bounds.maxMs || newEnd <= shortest.start.getTime()) {
+        const newEnd = target.end.getTime() + offset
+        if (newEnd > bounds.maxMs || newEnd <= target.start.getTime()) {
             state.calendar.resumeRendering()
             undo(state.calendar)
             return
         }
-        shortest.setDates(shortest.start, new Date(newEnd))
+        target.setDates(target.start, new Date(newEnd))
     }
 
     state.calendar.resumeRendering()
+}
+
+function moveResizeWithPush(direction: 1 | -1): void {
+    if (!state.calendar) return
+    const selected = getTargetEvents()
+    // Push/pull disabled for multi-select
+    if (selected.length !== 1) return
+
+    const target = selected[0]
+    const bounds = getCalendarBounds()
+    const startEdge = resizeEdge() === 'start'
+    const offset = direction * FIVE_MIN
+    const calendar = state.calendar
+
+    pushUndo(calendar)
+    calendar.pauseRendering()
+
+    // Validate the resize itself
+    if (startEdge) {
+        const newStart = target.start.getTime() + offset
+        if (newStart < bounds.minMs || newStart >= target.end.getTime()) {
+            calendar.resumeRendering()
+            undo(calendar)
+            return
+        }
+    } else {
+        const newEnd = target.end.getTime() + offset
+        if (newEnd > bounds.maxMs || newEnd <= target.start.getTime()) {
+            calendar.resumeRendering()
+            undo(calendar)
+            return
+        }
+    }
+
+    // Find the adjacent cluster on the affected side and shift it
+    const allSorted = getSortedEvents()
+    const others = allSorted.filter(e => e.id !== target.id && e.extendedProps.pinType !== 'ghost')
+
+    if (startEdge) {
+        // Resizing the start edge — the cluster above is affected
+        // direction = -1 (k) extends start up → push cluster up (negative offset)
+        // direction = +1 (j) shrinks start down → pull cluster down (positive offset)
+        const eventsAbove = others
+            .filter(e => e.end.getTime() <= target.start.getTime() + FIVE_MIN)
+            .sort((a, b) => b.end.getTime() - a.end.getTime())
+
+        // Build the contiguous cluster touching the start edge
+        const cluster: EventApi[] = []
+        let frontier = target.start.getTime()
+        for (const e of eventsAbove) {
+            if (e.end.getTime() >= frontier - FIVE_MIN) {
+                // Check for solid pin — can't push it, jump over
+                if (e.extendedProps.pinType === 'solid') {
+                    // Jump: skip this event, update frontier to its start
+                    frontier = Math.min(frontier, e.start.getTime())
+                    continue
+                }
+                cluster.push(e)
+                frontier = Math.min(frontier, e.start.getTime())
+            } else {
+                break
+            }
+        }
+
+        // Check boundary for cluster shift
+        if (cluster.length > 0) {
+            const clusterMinStart = Math.min(...cluster.map(e => e.start.getTime()))
+            if (clusterMinStart + offset < bounds.minMs) {
+                calendar.resumeRendering()
+                undo(calendar)
+                return
+            }
+            // Shift cluster
+            for (const e of cluster) {
+                e.setDates(new Date(e.start.getTime() + offset), new Date(e.end.getTime() + offset))
+            }
+        }
+
+        // Resize the target
+        target.setDates(new Date(target.start.getTime() + offset), target.end)
+    } else {
+        // Resizing the end edge — the cluster below is affected
+        // direction = +1 (j) extends end down → push cluster down (positive offset)
+        // direction = -1 (k) shrinks end up → pull cluster up (negative offset)
+        const eventsBelow = others
+            .filter(e => e.start.getTime() >= target.end.getTime() - FIVE_MIN)
+            .sort((a, b) => a.start.getTime() - b.start.getTime())
+
+        // Build the contiguous cluster touching the end edge
+        const cluster: EventApi[] = []
+        let frontier = target.end.getTime()
+        for (const e of eventsBelow) {
+            if (e.start.getTime() <= frontier + FIVE_MIN) {
+                if (e.extendedProps.pinType === 'solid') {
+                    frontier = Math.max(frontier, e.end.getTime())
+                    continue
+                }
+                cluster.push(e)
+                frontier = Math.max(frontier, e.end.getTime())
+            } else {
+                break
+            }
+        }
+
+        // Check boundary for cluster shift
+        if (cluster.length > 0) {
+            const clusterMaxEnd = Math.max(...cluster.map(e => e.end.getTime()))
+            if (clusterMaxEnd + offset > bounds.maxMs) {
+                calendar.resumeRendering()
+                undo(calendar)
+                return
+            }
+            // Shift cluster
+            for (const e of cluster) {
+                e.setDates(new Date(e.start.getTime() + offset), new Date(e.end.getTime() + offset))
+            }
+        }
+
+        // Resize the target
+        target.setDates(target.start, new Date(target.end.getTime() + offset))
+    }
+
+    calendar.resumeRendering()
 }
 
 // --- Key binding registry (single source of truth for handler + legend) ---
@@ -651,10 +785,20 @@ const bindings: KeyBinding[] = [
     },
     {
         mode: 'normal',
-        key: 't',
-        label: 'resize mode',
+        key: 'e',
+        prefix: 't',
+        label: 'resize end',
         handler: () => {
-            if (getSelectedEvents().length > 0) enterMoveMode('resize')
+            if (getSelectedEvents().length > 0) enterResizeMode('end')
+        }
+    },
+    {
+        mode: 'normal',
+        key: 's',
+        prefix: 't',
+        label: 'resize start',
+        handler: () => {
+            if (getSelectedEvents().length > 0) enterResizeMode('start')
         }
     },
     {
@@ -778,9 +922,17 @@ const bindings: KeyBinding[] = [
     },
     {
         mode: 'select',
-        key: 't',
-        label: 'resize mode',
-        handler: () => enterMoveMode('resize')
+        key: 'e',
+        prefix: 't',
+        label: 'resize end',
+        handler: () => enterResizeMode('end')
+    },
+    {
+        mode: 'select',
+        key: 's',
+        prefix: 't',
+        label: 'resize start',
+        handler: () => enterResizeMode('start')
     },
     {
         mode: 'select',
@@ -962,14 +1114,14 @@ const bindings: KeyBinding[] = [
         key: 'j',
         label: () => {
             const sub = moveSubMode()
-            if (sub === 'resize') return 'extend end'
+            if (sub === 'resize') return resizeEdge() === 'end' ? 'extend end' : 'shrink start'
             return sub === 'push' ? 'push down' : sub === 'overlap' ? 'overlap down' : 'swap down'
         },
         handler: () => {
             const sub = moveSubMode()
             if (sub === 'push') movePush(1, false)
             else if (sub === 'overlap') movePush(1, true)
-            else if (sub === 'resize') moveResize(1, false)
+            else if (sub === 'resize') moveResize(1)
             else moveSwap(1)
         }
     },
@@ -978,14 +1130,14 @@ const bindings: KeyBinding[] = [
         key: 'k',
         label: () => {
             const sub = moveSubMode()
-            if (sub === 'resize') return 'shrink end'
+            if (sub === 'resize') return resizeEdge() === 'end' ? 'shrink end' : 'extend start'
             return sub === 'push' ? 'push up' : sub === 'overlap' ? 'overlap up' : 'swap up'
         },
         handler: () => {
             const sub = moveSubMode()
             if (sub === 'push') movePush(-1, false)
             else if (sub === 'overlap') movePush(-1, true)
-            else if (sub === 'resize') moveResize(-1, false)
+            else if (sub === 'resize') moveResize(-1)
             else moveSwap(-1)
         }
     },
@@ -993,18 +1145,24 @@ const bindings: KeyBinding[] = [
         mode: 'move',
         key: ['j', 'J'],
         shift: true,
-        label: () => (moveSubMode() === 'resize' ? 'shrink start' : 'extend end'),
+        label: () => {
+            if (moveSubMode() !== 'resize') return ''
+            return resizeEdge() === 'end' ? 'extend end + push' : 'shrink start + pull'
+        },
         handler: () => {
-            if (moveSubMode() === 'resize') moveResize(1, true)
+            if (moveSubMode() === 'resize') moveResizeWithPush(1)
         }
     },
     {
         mode: 'move',
         key: ['k', 'K'],
         shift: true,
-        label: () => (moveSubMode() === 'resize' ? 'extend start' : 'shrink start'),
+        label: () => {
+            if (moveSubMode() !== 'resize') return ''
+            return resizeEdge() === 'end' ? 'shrink end + pull' : 'extend start + push'
+        },
         handler: () => {
-            if (moveSubMode() === 'resize') moveResize(-1, true)
+            if (moveSubMode() === 'resize') moveResizeWithPush(-1)
         }
     },
     {
@@ -1022,14 +1180,39 @@ const bindings: KeyBinding[] = [
     {
         mode: 'move',
         key: 's',
-        label: 'swap mode',
-        handler: () => setMoveSubMode('swap')
+        label: () => (moveSubMode() === 'resize' ? 'start edge' : 'swap mode'),
+        handler: () => {
+            if (moveSubMode() === 'resize') setResizeEdge('start')
+            else setMoveSubMode('swap')
+        }
     },
     {
         mode: 'move',
-        key: 't',
-        label: 'resize mode',
-        handler: () => setMoveSubMode('resize')
+        key: 'e',
+        prefix: 't',
+        label: 'resize end',
+        handler: () => {
+            setMoveSubMode('resize')
+            setResizeEdge('end')
+        }
+    },
+    {
+        mode: 'move',
+        key: 's',
+        prefix: 't',
+        label: 'resize start',
+        handler: () => {
+            setMoveSubMode('resize')
+            setResizeEdge('start')
+        }
+    },
+    {
+        mode: 'move',
+        key: 'e',
+        label: () => (moveSubMode() === 'resize' ? 'end edge' : ''),
+        handler: () => {
+            if (moveSubMode() === 'resize') setResizeEdge('end')
+        }
     },
     {
         mode: 'move',

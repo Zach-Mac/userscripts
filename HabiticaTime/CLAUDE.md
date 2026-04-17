@@ -99,7 +99,7 @@ Pin cycling is handled by `cyclePinType()` in `utils/events.ts`. Visual styling 
 Two distinct grouping concepts in `utils/reschedule.ts`:
 
 - **Overlap group** (`buildOverlapGroups()`): Events that directly overlap in time (event B starts before event A ends). Strict temporal overlap — no gap tolerance.
-- **Cluster** (`buildClusters()`): Events within 5 minutes of each other, treated as a continuous block. Gaps <5m are bridged. Used by squeeze to identify "NOW-group" and adjacent groups.
+- **Cluster** (`buildClusters()`): Events within 5 minutes of each other, treated as a continuous block. Gaps <5m are bridged. Used by squeeze to identify "NOW-group" and adjacent groups, and by resize push/pull to determine which events shift with the resized edge.
 
 Both take sorted events and return arrays of `Cluster` (which is `EventApi[]`). Helper functions: `getClusterStart()`, `getClusterEnd()`, `shiftCluster()`.
 
