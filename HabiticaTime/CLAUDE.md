@@ -73,6 +73,10 @@ Tasks use a specific notation in Habitica task notes that the script parses:
 
 A task cannot have both `pt` and `pto`.
 
+## Keyboard Event Management
+
+See [KEYBOARD_EVENTS.md](KEYBOARD_EVENTS.md) for the full design spec of the vim-inspired modal system (Normal / Select / Move modes) for selecting and moving calendar events via keyboard.
+
 ## Event Interactions
 
 - **Left click** — Toggle finished state

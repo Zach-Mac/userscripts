@@ -61,6 +61,12 @@ etc. (p/m/s freely switch between push/overlap/swap in move mode)
 - Focus stops at boundaries (no wrap-around).
 - Ghost-pinned and solid-pinned events are included in navigation.
 
+### Scrolling
+- `zz` — Scroll the calendar so the focused event is vertically centered.
+- `zt` — Scroll the calendar so the focused event is at the top of the view.
+- `zb` — Scroll the calendar so the focused event is at the bottom of the view.
+- `ArrowDown` / `ArrowUp` — Scroll the calendar view by 100px.
+
 ### Event Filter
 While in select mode, press `f` then a second key to set the filter:
 
@@ -165,6 +171,12 @@ The selected group moves in event-length steps:
 - Solid-pinned events cannot be swapped. Jump skips over them to the next non-pinned event.
 - Ghost-pinned events are ignored (invisible to jump/swap logic).
 
+### Scrolling
+- `zz` — Scroll the calendar so the selection midpoint is vertically centered.
+- `zt` — Scroll the calendar so the selection start is at the top of the view.
+- `zb` — Scroll the calendar so the selection end is at the bottom of the view.
+- `ArrowDown` / `ArrowUp` — Scroll the calendar view by 100px.
+
 ### Clearing Selection
 - `c` — Clear selection and return to select mode.
 
@@ -211,7 +223,7 @@ These shortcuts are already registered and must not conflict:
 - `ctrl-alt-e` — Task tools toggle
 - `ctrl-alt-h` — Task highlighter toggle
 
-The new keys (`v`, `p`, `m`/`o`, `s`, `c`, `j`, `k`, `g`, `G`, `fa`/`ff`/`fu`, `d`, `Delete`, `Space`, `Enter`, `Escape`, `Shift+j/k`) are all unmodified or lightly modified single keys, which are only active in their respective modes — no conflicts.
+The new keys (`v`, `p`, `m`/`o`, `s`, `c`, `j`, `k`, `g`, `G`, `fa`/`ff`/`fu`, `zz`/`zt`/`zb`, `d`, `Delete`, `Space`, `Enter`, `Escape`, `Shift+j/k`, `ArrowDown`/`ArrowUp`) are all unmodified or lightly modified single keys, which are only active in their respective modes — no conflicts.
 
 ## Edge Cases
 

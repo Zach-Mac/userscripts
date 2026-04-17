@@ -16560,7 +16560,7 @@ const bindings = [
     if (wrapper) wrapper.scrollTop -= 100;
   }
 },
-// --- Scroll to center (zz) ---
+// --- Scroll positioning (zz/zt/zb) ---
 {
   mode: 'select',
   key: 'z',
@@ -16578,6 +16578,40 @@ const bindings = [
     const elCenter = elRect.top + elRect.height / 2;
     const wrapperCenter = wrapperRect.top + wrapperRect.height / 2;
     wrapper.scrollTop += elCenter - wrapperCenter;
+  }
+}, {
+  mode: 'select',
+  key: 't',
+  prefix: 'z',
+  label: 'scroll focus to top',
+  handler: () => {
+    const id = focusedEventId();
+    if (!id) return;
+    const el = document.querySelector(`[data-event-id="${id}"]`);
+    if (!el) return;
+    const wrapper = document.getElementById('calendar-wrapper');
+    if (!wrapper) return;
+    const elRect = el.getBoundingClientRect();
+    const wrapperRect = wrapper.getBoundingClientRect();
+    wrapper.scrollTop += elRect.top - wrapperRect.top;
+  }
+}, {
+  mode: 'select',
+  key: 'b',
+  prefix: 'z',
+  label: 'scroll focus to bottom',
+  handler: () => {
+    const id = focusedEventId();
+    if (!id) return;
+    const el = document.querySelector(`[data-event-id="${id}"]`);
+    if (!el) return;
+    const wrapper = document.getElementById('calendar-wrapper');
+    if (!wrapper) return;
+    const elRect = el.getBoundingClientRect();
+    const wrapperRect = wrapper.getBoundingClientRect();
+    const elBottom = elRect.top + elRect.height;
+    const wrapperBottom = wrapperRect.top + wrapperRect.height;
+    wrapper.scrollTop += elBottom - wrapperBottom;
   }
 }, {
   mode: 'move',
@@ -16598,6 +16632,41 @@ const bindings = [
       if (!wrapper) return;
       state.scrollToTime(midTimeMs);
       wrapper.scrollTop -= wrapper.clientHeight / 2;
+    }
+  }
+}, {
+  mode: 'move',
+  key: 't',
+  prefix: 'z',
+  label: 'scroll selection to top',
+  handler: () => {
+    const block = getSelectionBlock();
+    if (!block) return;
+    const midnight = new Date();
+    midnight.setHours(0, 0, 0, 0);
+    const startTimeMs = block.blockStart - midnight.getTime();
+    if (state.scrollToTime) {
+      const wrapper = document.getElementById('calendar-wrapper');
+      if (!wrapper) return;
+      state.scrollToTime(startTimeMs);
+    }
+  }
+}, {
+  mode: 'move',
+  key: 'b',
+  prefix: 'z',
+  label: 'scroll selection to bottom',
+  handler: () => {
+    const block = getSelectionBlock();
+    if (!block) return;
+    const midnight = new Date();
+    midnight.setHours(0, 0, 0, 0);
+    const endTimeMs = block.blockEnd - midnight.getTime();
+    if (state.scrollToTime) {
+      const wrapper = document.getElementById('calendar-wrapper');
+      if (!wrapper) return;
+      state.scrollToTime(endTimeMs);
+      wrapper.scrollTop -= wrapper.clientHeight;
     }
   }
 },
