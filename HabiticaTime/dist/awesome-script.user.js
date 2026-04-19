@@ -16662,6 +16662,17 @@ const bindings = [
   handler: () => clearSelection()
 }, {
   mode: 'select',
+  key: 'c',
+  ctrl: true,
+  label: 'copy to clipboard',
+  handler: () => {
+    const events = getTargetEvents();
+    if (events.length === 0) return;
+    const json = JSON.stringify(events.map(e => e.toJSON()), null, 2);
+    navigator.clipboard.writeText(json);
+  }
+}, {
+  mode: 'select',
   key: [...EXIT_KEYS, 'v'],
   label: 'exit',
   handler: () => {
@@ -18435,7 +18446,7 @@ dom.observe(document.body, () => {
   };
   const handleSaveCal = () => {
     // localStorage.setItem('events', JSON.stringify(state.calendar.getEvents()))
-    const eventsString = JSON.stringify(state.calendar.getEvents());
+    const eventsString = JSON.stringify(state.calendar.getEvents().map(e => e.toJSON()), null, 2);
     console.log('SAVING EVENTS:');
     console.log(eventsString);
 

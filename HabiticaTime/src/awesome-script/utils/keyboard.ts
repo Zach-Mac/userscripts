@@ -942,6 +942,22 @@ const bindings: KeyBinding[] = [
     },
     {
         mode: 'select',
+        key: 'c',
+        ctrl: true,
+        label: 'copy to clipboard',
+        handler: () => {
+            const events = getTargetEvents()
+            if (events.length === 0) return
+            const json = JSON.stringify(
+                events.map(e => e.toJSON()),
+                null,
+                2
+            )
+            navigator.clipboard.writeText(json)
+        }
+    },
+    {
+        mode: 'select',
         key: [...EXIT_KEYS, 'v'],
         label: 'exit',
         handler: () => {

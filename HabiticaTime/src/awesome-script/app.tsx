@@ -103,7 +103,11 @@ const initCalendar = observe(document.body, () => {
     }
     const handleSaveCal = () => {
         // localStorage.setItem('events', JSON.stringify(state.calendar.getEvents()))
-        const eventsString = JSON.stringify(state.calendar.getEvents())
+        const eventsString = JSON.stringify(
+            state.calendar.getEvents().map(e => e.toJSON()),
+            null,
+            2
+        )
         console.log('SAVING EVENTS:')
         console.log(eventsString)
 
