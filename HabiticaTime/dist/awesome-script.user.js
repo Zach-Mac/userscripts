@@ -15845,7 +15845,7 @@ function squeezeEvents(calendar) {
   calendar.resumeRendering();
 }
 
-const EXIT_KEY = 'Backspace';
+const EXIT_KEYS = ['Backspace', 'Escape'];
 
 // --- Sorted event helpers ---
 
@@ -16544,7 +16544,7 @@ const bindings = [
   }
 }, {
   mode: 'normal',
-  key: EXIT_KEY,
+  key: EXIT_KEYS,
   label: 'deselect',
   handler: () => {
     if (getSelectedEvents().length > 0) clearSelection();
@@ -16662,7 +16662,7 @@ const bindings = [
   handler: () => clearSelection()
 }, {
   mode: 'select',
-  key: [EXIT_KEY, 'v'],
+  key: [...EXIT_KEYS, 'v'],
   label: 'exit',
   handler: () => {
     focusEvent(null);
@@ -16671,7 +16671,7 @@ const bindings = [
   }
 }, {
   mode: ['select', 'move'],
-  key: EXIT_KEY,
+  key: EXIT_KEYS,
   shift: true,
   label: 'exit + deselect',
   handler: () => {
@@ -16915,7 +16915,7 @@ const bindings = [
   }
 }, {
   mode: 'move',
-  key: [EXIT_KEY, 'v'],
+  key: [...EXIT_KEYS, 'v', 'Enter'],
   label: 'back to select',
   handler: () => setKeyboardMode('select')
 },

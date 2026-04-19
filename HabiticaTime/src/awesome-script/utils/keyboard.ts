@@ -20,7 +20,7 @@ import { isFinished, buildOverlapGroups, buildClusters } from './reschedule'
 import { pushUndo, undo, redo } from './history'
 import { parseTime } from './utils'
 
-const EXIT_KEY = 'Backspace'
+const EXIT_KEYS = ['Backspace', 'Escape']
 
 // --- Sorted event helpers ---
 
@@ -803,7 +803,7 @@ const bindings: KeyBinding[] = [
     },
     {
         mode: 'normal',
-        key: EXIT_KEY,
+        key: EXIT_KEYS,
         label: 'deselect',
         handler: () => {
             if (getSelectedEvents().length > 0) clearSelection()
@@ -942,7 +942,7 @@ const bindings: KeyBinding[] = [
     },
     {
         mode: 'select',
-        key: [EXIT_KEY, 'v'],
+        key: [...EXIT_KEYS, 'v'],
         label: 'exit',
         handler: () => {
             focusEvent(null)
@@ -953,7 +953,7 @@ const bindings: KeyBinding[] = [
 
     {
         mode: ['select', 'move'],
-        key: EXIT_KEY,
+        key: EXIT_KEYS,
         shift: true,
         label: 'exit + deselect',
         handler: () => {
@@ -1225,7 +1225,7 @@ const bindings: KeyBinding[] = [
     },
     {
         mode: 'move',
-        key: [EXIT_KEY, 'v'],
+        key: [...EXIT_KEYS, 'v', 'Enter'],
         label: 'back to select',
         handler: () => setKeyboardMode('select')
     },
