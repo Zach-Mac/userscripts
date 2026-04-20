@@ -13,7 +13,8 @@ import {
     focusedEventId,
     setFocusedEventId,
     legendHidden,
-    setLegendHidden
+    setLegendHidden,
+    setCopyFlash
 } from '../global'
 import { selectEvents, deselectEvents, getSelectedEvents, refreshSelectedCount } from './selection'
 import { isFinished, buildOverlapGroups, buildClusters, squeezeOverlapGroup } from './reschedule'
@@ -278,6 +279,18 @@ function enterResizeMode(edge: 'start' | 'end'): void {
 // --- Move helpers ---
 
 const FIVE_MIN = 5 * 60 * 1000
+
+let copyFlashTimer: number | null = null
+function flashCopied(count: number, kind: 'full' | 'minimal'): void {
+    const noun = count === 1 ? 'event' : 'events'
+    const suffix = kind === 'minimal' ? ' (minimal)' : ''
+    setCopyFlash(`✓ Copied ${count} ${noun}${suffix}`)
+    if (copyFlashTimer !== null) clearTimeout(copyFlashTimer)
+    copyFlashTimer = window.setTimeout(() => {
+        setCopyFlash(null)
+        copyFlashTimer = null
+    }, 1500)
+}
 
 function getSelectionBlock(): {
     events: EventApi[]
@@ -1043,6 +1056,25 @@ const bindings: KeyBinding[] = [
                 2
             )
             navigator.clipboard.writeText(json)
+            flashCopied(events.length, 'full')
+        }
+    },
+    {
+        mode: 'select',
+        key: 'y',
+        label: 'copy minimal',
+        handler: () => {
+            const events = getTargetEvents()
+            if (events.length === 0) return
+            const fmt = (d: Date) =>
+                `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+            const text = events
+                .slice()
+                .sort((a, b) => a.start.getTime() - b.start.getTime())
+                .map(e => `${e.title}  ${fmt(e.start)}–${fmt(e.end)}`)
+                .join('\n')
+            navigator.clipboard.writeText(text)
+            flashCopied(events.length, 'minimal')
         }
     },
     {

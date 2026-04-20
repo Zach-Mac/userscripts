@@ -19,7 +19,8 @@ import {
     resizeEdge,
     selectedCount,
     legendHidden,
-    setLegendHidden
+    setLegendHidden,
+    copyFlash
 } from './global.js'
 import { getLegend } from './utils/keyboard.js'
 import { TimeCalc } from './timeCalc.jsx'
@@ -325,9 +326,16 @@ const initCalendar = observe(document.body, () => {
                     </div>
                 </Show>
 
-                <Show when={selectedCount() > 0}>
-                    <div class="mode-indicator" style={{ left: 'auto', right: '0' }}>
-                        {selectedCount()} selected
+                <Show when={copyFlash() || selectedCount() > 0}>
+                    <div
+                        class="mode-indicator"
+                        style={{
+                            left: 'auto',
+                            right: '0',
+                            ...(copyFlash() ? { background: '#2e7d32', color: '#fff' } : {})
+                        }}
+                    >
+                        {copyFlash() || `${selectedCount()} selected`}
                     </div>
                 </Show>
 

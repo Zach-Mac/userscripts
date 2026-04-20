@@ -15167,6 +15167,7 @@ const [eventFilter, setEventFilter] = solidJs.createSignal('all');
 const [focusedEventId, setFocusedEventId] = solidJs.createSignal(null);
 const [selectedCount, setSelectedCount] = solidJs.createSignal(0);
 const [legendHidden, setLegendHidden] = solidJs.createSignal(false);
+const [copyFlash, setCopyFlash] = solidJs.createSignal(null);
 const state = {
   currZoomLevel: 2,
   calendar: null,
@@ -16135,6 +16136,17 @@ function enterResizeMode(edge) {
 // --- Move helpers ---
 
 const FIVE_MIN = 5 * 60 * 1000;
+let copyFlashTimer = null;
+function flashCopied(count, kind) {
+  const noun = count === 1 ? 'event' : 'events';
+  const suffix = kind === 'minimal' ? ' (minimal)' : '';
+  setCopyFlash(`✓ Copied ${count} ${noun}${suffix}`);
+  if (copyFlashTimer !== null) clearTimeout(copyFlashTimer);
+  copyFlashTimer = window.setTimeout(() => {
+    setCopyFlash(null);
+    copyFlashTimer = null;
+  }, 1500);
+}
 function getSelectionBlock() {
   const events = getTargetEvents().sort((a, b) => a.start.getTime() - b.start.getTime());
   if (events.length === 0) return null;
@@ -16793,6 +16805,19 @@ const bindings = [
     if (events.length === 0) return;
     const json = JSON.stringify(events.map(e => e.toJSON()), null, 2);
     navigator.clipboard.writeText(json);
+    flashCopied(events.length, 'full');
+  }
+}, {
+  mode: 'select',
+  key: 'y',
+  label: 'copy minimal',
+  handler: () => {
+    const events = getTargetEvents();
+    if (events.length === 0) return;
+    const fmt = d => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    const text = events.slice().sort((a, b) => a.start.getTime() - b.start.getTime()).map(e => `${e.title}  ${fmt(e.start)}–${fmt(e.end)}`).join('\n');
+    navigator.clipboard.writeText(text);
+    flashCopied(events.length, 'minimal');
   }
 }, {
   mode: 'select',
@@ -18501,22 +18526,21 @@ web.delegateEvents(["click"]);
 
 var _tmpl$ = /*#__PURE__*/web.template(`<div class=mode-indicator>`),
   _tmpl$2 = /*#__PURE__*/web.template(`<div class=key-legend><button class=key-legend-toggle>`),
-  _tmpl$3 = /*#__PURE__*/web.template(`<div class=mode-indicator> selected`),
-  _tmpl$4 = /*#__PURE__*/web.template(`<div><div><h2>Calendar</h2><div><button class=cal-header-btn title="Create Calendar">󰃳</button><button class=cal-header-btn title="Delete Calendar">󰧧</button><button class=cal-header-btn title="Copy to Clipboard"></button><button class=cal-header-btn title="Load from Saved">󰬥</button><button class=cal-header-btn title="Catchup (Ctrl+Shift+Space)">󰚰</button><button class=cal-header-btn title="Squeeze (Ctrl+Shift+S)">󰡍</button><button class=cal-header-btn title="Undo (Ctrl+Z)">󰕌</button><button class=cal-header-btn title="Redo (Ctrl+Shift+Z)">󰑎</button><button class=cal-header-btn title="Show more"></button></div></div><div id=calendar-wrapper><div id=calendar>`),
-  _tmpl$5 = /*#__PURE__*/web.template(`<label>Min Time`),
-  _tmpl$6 = /*#__PURE__*/web.template(`<input type=time value=03:00>`),
-  _tmpl$7 = /*#__PURE__*/web.template(`<label>Max Time`),
-  _tmpl$8 = /*#__PURE__*/web.template(`<input type=time value=02:00>`),
-  _tmpl$9 = /*#__PURE__*/web.template(`<button>Print Events`),
-  _tmpl$10 = /*#__PURE__*/web.template(`<br>`),
-  _tmpl$11 = /*#__PURE__*/web.template(`<label>Finished events: <select><option value=none>Don't move</option><option value=move>Move</option><option value=cascade>Move + cascade`),
-  _tmpl$12 = /*#__PURE__*/web.template(`<label>Ghost opacity: <input type=range min=0.1 max=1 step=0.05>`),
-  _tmpl$13 = /*#__PURE__*/web.template(`<label>Focus color: <input type=color>`),
-  _tmpl$14 = /*#__PURE__*/web.template(`<div>: `),
-  _tmpl$15 = /*#__PURE__*/web.template(`<span class=key-legend-keys>`),
-  _tmpl$16 = /*#__PURE__*/web.template(`<span class=key-legend-label>`),
-  _tmpl$17 = /*#__PURE__*/web.template(`<span class=key-legend-key>`),
-  _tmpl$18 = /*#__PURE__*/web.template(`<div>`);
+  _tmpl$3 = /*#__PURE__*/web.template(`<div><div><h2>Calendar</h2><div><button class=cal-header-btn title="Create Calendar">󰃳</button><button class=cal-header-btn title="Delete Calendar">󰧧</button><button class=cal-header-btn title="Copy to Clipboard"></button><button class=cal-header-btn title="Load from Saved">󰬥</button><button class=cal-header-btn title="Catchup (Ctrl+Shift+Space)">󰚰</button><button class=cal-header-btn title="Squeeze (Ctrl+Shift+S)">󰡍</button><button class=cal-header-btn title="Undo (Ctrl+Z)">󰕌</button><button class=cal-header-btn title="Redo (Ctrl+Shift+Z)">󰑎</button><button class=cal-header-btn title="Show more"></button></div></div><div id=calendar-wrapper><div id=calendar>`),
+  _tmpl$4 = /*#__PURE__*/web.template(`<label>Min Time`),
+  _tmpl$5 = /*#__PURE__*/web.template(`<input type=time value=03:00>`),
+  _tmpl$6 = /*#__PURE__*/web.template(`<label>Max Time`),
+  _tmpl$7 = /*#__PURE__*/web.template(`<input type=time value=02:00>`),
+  _tmpl$8 = /*#__PURE__*/web.template(`<button>Print Events`),
+  _tmpl$9 = /*#__PURE__*/web.template(`<br>`),
+  _tmpl$10 = /*#__PURE__*/web.template(`<label>Finished events: <select><option value=none>Don't move</option><option value=move>Move</option><option value=cascade>Move + cascade`),
+  _tmpl$11 = /*#__PURE__*/web.template(`<label>Ghost opacity: <input type=range min=0.1 max=1 step=0.05>`),
+  _tmpl$12 = /*#__PURE__*/web.template(`<label>Focus color: <input type=color>`),
+  _tmpl$13 = /*#__PURE__*/web.template(`<div>: `),
+  _tmpl$14 = /*#__PURE__*/web.template(`<span class=key-legend-keys>`),
+  _tmpl$15 = /*#__PURE__*/web.template(`<span class=key-legend-label>`),
+  _tmpl$16 = /*#__PURE__*/web.template(`<span class=key-legend-key>`),
+  _tmpl$17 = /*#__PURE__*/web.template(`<div>`);
 const MOBILE_BREAKPOINT_WIDTH = 770;
 const [dupeEvents, setDupeEvents] = solidJs.createSignal({});
 const [showMore, setShowMore] = solidJs.createSignal(false);
@@ -18601,7 +18625,7 @@ dom.observe(document.body, () => {
   const Wrapper = () => {
     let wrapperEl;
     return (() => {
-      var _el$ = _tmpl$4(),
+      var _el$ = _tmpl$3(),
         _el$2 = _el$.firstChild,
         _el$3 = _el$2.firstChild,
         _el$4 = _el$3.nextSibling,
@@ -18614,7 +18638,7 @@ dom.observe(document.body, () => {
         _el$11 = _el$10.nextSibling,
         _el$12 = _el$11.nextSibling,
         _el$13 = _el$12.nextSibling,
-        _el$19 = _el$2.nextSibling;
+        _el$18 = _el$2.nextSibling;
       _el$.style.setProperty("position", "relative");
       _el$2.style.setProperty("display", "flex");
       _el$2.style.setProperty("align-items", "center");
@@ -18638,35 +18662,35 @@ dom.observe(document.body, () => {
       web.insert(_el$13, () => showMore() ? '󰅃' : '󰅀');
       web.insert(_el$, (() => {
         var _c$ = web.memo(() => !!showMore());
-        return () => _c$() && [_tmpl$5(), (() => {
-          var _el$21 = _tmpl$6();
-          _el$21.$$input = handleMinTimeChange;
-          return _el$21;
-        })(), _tmpl$7(), (() => {
-          var _el$23 = _tmpl$8();
-          _el$23.$$input = handleMaxTimeChange;
-          return _el$23;
+        return () => _c$() && [_tmpl$4(), (() => {
+          var _el$20 = _tmpl$5();
+          _el$20.$$input = handleMinTimeChange;
+          return _el$20;
+        })(), _tmpl$6(), (() => {
+          var _el$22 = _tmpl$7();
+          _el$22.$$input = handleMaxTimeChange;
+          return _el$22;
         })(), (() => {
-          var _el$24 = _tmpl$9();
-          _el$24.$$click = printEvents;
-          return _el$24;
-        })(), _tmpl$10(), (() => {
-          var _el$26 = _tmpl$11(),
-            _el$27 = _el$26.firstChild,
-            _el$29 = _el$27.nextSibling;
-          _el$29.addEventListener("change", e => {
+          var _el$23 = _tmpl$8();
+          _el$23.$$click = printEvents;
+          return _el$23;
+        })(), _tmpl$9(), (() => {
+          var _el$25 = _tmpl$10(),
+            _el$26 = _el$25.firstChild,
+            _el$28 = _el$26.nextSibling;
+          _el$28.addEventListener("change", e => {
             const val = e.currentTarget.value;
             setFinishedMode(val);
             localStorage.setItem('finishedMode', val);
           });
-          web.effect(() => _el$29.value = finishedMode());
-          return _el$26;
-        })(), _tmpl$10(), (() => {
-          var _el$31 = _tmpl$12(),
-            _el$32 = _el$31.firstChild,
-            _el$33 = _el$32.nextSibling;
-          web.insert(_el$31, () => ghostOpacity().toFixed(2), _el$33);
-          _el$33.$$input = e => {
+          web.effect(() => _el$28.value = finishedMode());
+          return _el$25;
+        })(), _tmpl$9(), (() => {
+          var _el$30 = _tmpl$11(),
+            _el$31 = _el$30.firstChild,
+            _el$32 = _el$31.nextSibling;
+          web.insert(_el$30, () => ghostOpacity().toFixed(2), _el$32);
+          _el$32.$$input = e => {
             const val = parseFloat(e.currentTarget.value);
             setGhostOpacity(val);
             state.ghostOpacity = val;
@@ -18674,28 +18698,28 @@ dom.observe(document.body, () => {
             const calEl = document.getElementById('calendar');
             calEl == null || calEl.style.setProperty('--ghost-opacity', String(val));
           };
-          web.effect(() => _el$33.value = ghostOpacity());
-          return _el$31;
-        })(), _tmpl$10(), (() => {
-          var _el$35 = _tmpl$13(),
-            _el$36 = _el$35.firstChild,
-            _el$38 = _el$36.nextSibling;
-          _el$38.$$input = e => {
+          web.effect(() => _el$32.value = ghostOpacity());
+          return _el$30;
+        })(), _tmpl$9(), (() => {
+          var _el$34 = _tmpl$12(),
+            _el$35 = _el$34.firstChild,
+            _el$37 = _el$35.nextSibling;
+          _el$37.$$input = e => {
             const val = e.currentTarget.value;
             setFocusColor(val);
             localStorage.setItem('focusColor', val);
             document.documentElement.style.setProperty('--focus-color', val);
           };
-          web.effect(() => _el$38.value = focusColor());
-          return _el$35;
-        })(), _tmpl$10(), web.memo(() => Object.entries(dupeEvents()).map(([eventName, duration]) => (() => {
-          var _el$40 = _tmpl$14(),
-            _el$41 = _el$40.firstChild;
-          web.insert(_el$40, eventName, _el$41);
-          web.insert(_el$40, () => msToHHMM(duration), null);
-          return _el$40;
+          web.effect(() => _el$37.value = focusColor());
+          return _el$34;
+        })(), _tmpl$9(), web.memo(() => Object.entries(dupeEvents()).map(([eventName, duration]) => (() => {
+          var _el$39 = _tmpl$13(),
+            _el$40 = _el$39.firstChild;
+          web.insert(_el$39, eventName, _el$40);
+          web.insert(_el$39, () => msToHHMM(duration), null);
+          return _el$39;
         })()))];
-      })(), _el$19);
+      })(), _el$18);
       web.insert(_el$, web.createComponent(solidJs.Show, {
         get when() {
           return keyboardMode() !== 'normal';
@@ -18729,22 +18753,22 @@ dom.observe(document.body, () => {
                     return getLegend();
                   },
                   children: entry => [(() => {
-                    var _el$42 = _tmpl$15();
-                    web.insert(_el$42, web.createComponent(solidJs.For, {
+                    var _el$41 = _tmpl$14();
+                    web.insert(_el$41, web.createComponent(solidJs.For, {
                       get each() {
                         return entry.keys;
                       },
                       children: k => (() => {
-                        var _el$44 = _tmpl$17();
-                        web.insert(_el$44, k);
-                        return _el$44;
+                        var _el$43 = _tmpl$16();
+                        web.insert(_el$43, k);
+                        return _el$43;
                       })()
                     }));
-                    return _el$42;
+                    return _el$41;
                   })(), (() => {
-                    var _el$43 = _tmpl$16();
-                    web.insert(_el$43, () => entry.label);
-                    return _el$43;
+                    var _el$42 = _tmpl$15();
+                    web.insert(_el$42, () => entry.label);
+                    return _el$42;
                   })()]
                 });
               }
@@ -18753,23 +18777,27 @@ dom.observe(document.body, () => {
             return _el$15;
           })()];
         }
-      }), _el$19);
+      }), _el$18);
       web.insert(_el$, web.createComponent(solidJs.Show, {
         get when() {
-          return selectedCount() > 0;
+          return copyFlash() || selectedCount() > 0;
         },
         get children() {
-          var _el$17 = _tmpl$3(),
-            _el$18 = _el$17.firstChild;
-          _el$17.style.setProperty("left", "auto");
-          _el$17.style.setProperty("right", "0");
-          web.insert(_el$17, selectedCount, _el$18);
+          var _el$17 = _tmpl$();
+          web.insert(_el$17, () => copyFlash() || `${selectedCount()} selected`);
+          web.effect(_$p => web.style(_el$17, _extends({
+            left: 'auto',
+            right: '0'
+          }, copyFlash() ? {
+            background: '#2e7d32',
+            color: '#fff'
+          } : {}), _$p));
           return _el$17;
         }
-      }), _el$19);
+      }), _el$18);
       var _ref$ = wrapperEl;
-      typeof _ref$ === "function" ? web.use(_ref$, _el$19) : wrapperEl = _el$19;
-      _el$19.style.setProperty("overflow", "auto");
+      typeof _ref$ === "function" ? web.use(_ref$, _el$18) : wrapperEl = _el$18;
+      _el$18.style.setProperty("overflow", "auto");
       web.effect(_p$ => {
         var _v$ = undoCount() === 0,
           _v$2 = undoCount() === 0 ? 0.35 : 1,
@@ -18780,7 +18808,7 @@ dom.observe(document.body, () => {
         _v$2 !== _p$.t && ((_p$.t = _v$2) != null ? _el$11.style.setProperty("opacity", _v$2) : _el$11.style.removeProperty("opacity"));
         _v$3 !== _p$.a && (_el$12.disabled = _p$.a = _v$3);
         _v$4 !== _p$.o && ((_p$.o = _v$4) != null ? _el$12.style.setProperty("opacity", _v$4) : _el$12.style.removeProperty("opacity"));
-        _v$5 !== _p$.i && ((_p$.i = _v$5) != null ? _el$19.style.setProperty("height", _v$5) : _el$19.style.removeProperty("height"));
+        _v$5 !== _p$.i && ((_p$.i = _v$5) != null ? _el$18.style.setProperty("height", _v$5) : _el$18.style.removeProperty("height"));
         return _p$;
       }, {
         e: undefined,
@@ -18815,10 +18843,10 @@ dom.observe(document.body, () => {
   const dailiesColumn = document.querySelector('.tasks-column.daily');
   if (!dailiesColumn) return false;
   web.render(() => (() => {
-    var _el$45 = _tmpl$18();
-    web.insert(_el$45, web.createComponent(TaskTools, {}), null);
-    web.insert(_el$45, web.createComponent(TaskHighlighter, {}), null);
-    return _el$45;
+    var _el$44 = _tmpl$17();
+    web.insert(_el$44, web.createComponent(TaskTools, {}), null);
+    web.insert(_el$44, web.createComponent(TaskHighlighter, {}), null);
+    return _el$44;
   })(), dailiesColumn);
   return true;
 });

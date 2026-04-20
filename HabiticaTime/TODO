@@ -3,3 +3,6 @@ nomenclature for <5m/timeslot =timeslot and >timeslot events
 swap doesn't fit to 5m grid when swapping with <timeslot events
 swap doesnt work well when moving passed ogroups
 refactor big files esp keyboard.ts
+
+ctrl-y to click sync button
+copy health and xp to beside timecalc bar
