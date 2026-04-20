@@ -15844,6 +15844,58 @@ function squeezeEvents(calendar) {
   }
   calendar.resumeRendering();
 }
+function squeezeOverlapGroup(calendar, seed) {
+  const sorted = calendar.getEvents().sort((a, b) => a.start.getTime() - b.start.getTime());
+  const ogroups = buildOverlapGroups(sorted);
+  const raw = ogroups.find(g => g.some(e => e.id === seed.id));
+  if (!raw) return null;
+
+  // Ghost pins are invisible to this op
+  const ogroup = raw.filter(e => e.extendedProps.pinType !== 'ghost');
+  if (ogroup.length === 0) return null;
+  const groupStart = getClusterStart(ogroup);
+  const groupEnd = getClusterEnd(ogroup);
+  const spanning = ogroup.filter(e => e.start.getTime() === groupStart && e.end.getTime() === groupEnd);
+  const shorts = ogroup.filter(e => !spanning.includes(e));
+  if (shorts.length === 0) return null;
+  const columns = buildOverlapGroups(shorts.sort((a, b) => a.start.getTime() - b.start.getTime()));
+
+  // No-op if all columns already packed starting at groupStart AND spanning already matches
+  let expectedStart = groupStart;
+  let changed = false;
+  for (const col of columns) {
+    if (getClusterStart(col) !== expectedStart) {
+      changed = true;
+      break;
+    }
+    expectedStart = getClusterEnd(col);
+  }
+  if (!changed && expectedStart === groupEnd) return null;
+
+  // Strip groupId so FullCalendar doesn't auto-move 'selected' siblings together
+  const savedGroupIds = new Map();
+  for (const e of ogroup) {
+    savedGroupIds.set(e.id, e.groupId);
+    if (e.groupId) e.setProp('groupId', '');
+  }
+  calendar.pauseRendering();
+  let lastEnd = groupStart;
+  for (const col of columns) {
+    shiftCluster(col, new Date(lastEnd));
+    lastEnd = getClusterEnd(col);
+  }
+  for (const e of spanning) e.setDates(e.start, new Date(lastEnd));
+  for (const e of ogroup) {
+    const g = savedGroupIds.get(e.id);
+    if (g) e.setProp('groupId', g);
+  }
+  calendar.resumeRendering();
+  return {
+    ogroupIds: new Set(ogroup.map(e => e.id)),
+    oldEnd: groupEnd,
+    newEnd: lastEnd
+  };
+}
 
 const EXIT_KEYS = ['Backspace', 'Escape'];
 
@@ -16655,6 +16707,77 @@ const bindings = [
   prefix: 't',
   label: 'resize start',
   handler: () => enterResizeMode('start')
+}, {
+  mode: ['select', 'move'],
+  key: 'q',
+  label: 'squeeze ogroup',
+  handler: () => {
+    if (!state.calendar) return;
+    const calendar = state.calendar;
+    const targets = getTargetEvents();
+    if (targets.length === 0) return;
+    pushUndo(calendar);
+    const seen = new Set();
+    for (const t of targets) {
+      if (seen.has(t.id)) continue;
+      const result = squeezeOverlapGroup(calendar, t);
+      if (result) for (const id of result.ogroupIds) seen.add(id);else seen.add(t.id);
+    }
+    setKeyboardMode('select');
+  }
+}, {
+  mode: ['select', 'move'],
+  key: ['q', 'Q'],
+  shift: true,
+  label: 'squeeze + pull',
+  handler: () => {
+    if (!state.calendar) return;
+    const calendar = state.calendar;
+    const targets = getTargetEvents();
+    if (targets.length === 0) return;
+    pushUndo(calendar);
+    // Earliest ogroup first so later pulls don't disturb already-processed groups
+    const sortedTargets = [...targets].sort((a, b) => a.start.getTime() - b.start.getTime());
+    const seen = new Set();
+    for (const t of sortedTargets) {
+      if (seen.has(t.id)) continue;
+      const result = squeezeOverlapGroup(calendar, t);
+      if (!result) {
+        seen.add(t.id);
+        continue;
+      }
+      for (const id of result.ogroupIds) seen.add(id);
+      const delta = result.newEnd - result.oldEnd;
+      if (delta >= 0) continue;
+
+      // Pull the contiguous cluster touching the ogroup's old end
+      const following = calendar.getEvents().filter(e => !result.ogroupIds.has(e.id) && e.extendedProps.pinType !== 'ghost' && e.start.getTime() >= result.oldEnd - FIVE_MIN).sort((a, b) => a.start.getTime() - b.start.getTime());
+      const cluster = [];
+      let frontier = result.oldEnd;
+      for (const e of following) {
+        if (e.start.getTime() > frontier + FIVE_MIN) break;
+        if (e.extendedProps.pinType === 'solid') break;
+        cluster.push(e);
+        frontier = Math.max(frontier, e.end.getTime());
+      }
+      if (cluster.length === 0) continue;
+      calendar.pauseRendering();
+      const savedGroupIds = new Map();
+      for (const e of cluster) {
+        savedGroupIds.set(e.id, e.groupId);
+        if (e.groupId) e.setProp('groupId', '');
+      }
+      for (const e of cluster) {
+        e.setDates(new Date(e.start.getTime() + delta), new Date(e.end.getTime() + delta));
+      }
+      for (const e of cluster) {
+        const g = savedGroupIds.get(e.id);
+        if (g) e.setProp('groupId', g);
+      }
+      calendar.resumeRendering();
+    }
+    setKeyboardMode('select');
+  }
 }, {
   mode: 'select',
   key: 'c',

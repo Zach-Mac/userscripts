@@ -16,7 +16,7 @@ import {
     setLegendHidden
 } from '../global'
 import { selectEvents, deselectEvents, getSelectedEvents, refreshSelectedCount } from './selection'
-import { isFinished, buildOverlapGroups, buildClusters } from './reschedule'
+import { isFinished, buildOverlapGroups, buildClusters, squeezeOverlapGroup } from './reschedule'
 import { pushUndo, undo, redo } from './history'
 import { parseTime } from './utils'
 
@@ -933,6 +933,95 @@ const bindings: KeyBinding[] = [
         prefix: 't',
         label: 'resize start',
         handler: () => enterResizeMode('start')
+    },
+    {
+        mode: ['select', 'move'],
+        key: 'q',
+        label: 'squeeze ogroup',
+        handler: () => {
+            if (!state.calendar) return
+            const calendar = state.calendar
+            const targets = getTargetEvents()
+            if (targets.length === 0) return
+            pushUndo(calendar)
+            const seen = new Set<string>()
+            for (const t of targets) {
+                if (seen.has(t.id)) continue
+                const result = squeezeOverlapGroup(calendar, t)
+                if (result) for (const id of result.ogroupIds) seen.add(id)
+                else seen.add(t.id)
+            }
+            setKeyboardMode('select')
+        }
+    },
+    {
+        mode: ['select', 'move'],
+        key: ['q', 'Q'],
+        shift: true,
+        label: 'squeeze + pull',
+        handler: () => {
+            if (!state.calendar) return
+            const calendar = state.calendar
+            const targets = getTargetEvents()
+            if (targets.length === 0) return
+            pushUndo(calendar)
+            // Earliest ogroup first so later pulls don't disturb already-processed groups
+            const sortedTargets = [...targets].sort((a, b) => a.start.getTime() - b.start.getTime())
+            const seen = new Set<string>()
+            for (const t of sortedTargets) {
+                if (seen.has(t.id)) continue
+                const result = squeezeOverlapGroup(calendar, t)
+                if (!result) {
+                    seen.add(t.id)
+                    continue
+                }
+                for (const id of result.ogroupIds) seen.add(id)
+
+                const delta = result.newEnd - result.oldEnd
+                if (delta >= 0) continue
+
+                // Pull the contiguous cluster touching the ogroup's old end
+                const following = calendar
+                    .getEvents()
+                    .filter(
+                        e =>
+                            !result.ogroupIds.has(e.id) &&
+                            e.extendedProps.pinType !== 'ghost' &&
+                            e.start.getTime() >= result.oldEnd - FIVE_MIN
+                    )
+                    .sort((a, b) => a.start.getTime() - b.start.getTime())
+
+                const cluster: EventApi[] = []
+                let frontier = result.oldEnd
+                for (const e of following) {
+                    if (e.start.getTime() > frontier + FIVE_MIN) break
+                    if (e.extendedProps.pinType === 'solid') break
+                    cluster.push(e)
+                    frontier = Math.max(frontier, e.end.getTime())
+                }
+
+                if (cluster.length === 0) continue
+
+                calendar.pauseRendering()
+                const savedGroupIds = new Map<string, string>()
+                for (const e of cluster) {
+                    savedGroupIds.set(e.id, e.groupId)
+                    if (e.groupId) e.setProp('groupId', '')
+                }
+                for (const e of cluster) {
+                    e.setDates(
+                        new Date(e.start.getTime() + delta),
+                        new Date(e.end.getTime() + delta)
+                    )
+                }
+                for (const e of cluster) {
+                    const g = savedGroupIds.get(e.id)
+                    if (g) e.setProp('groupId', g)
+                }
+                calendar.resumeRendering()
+            }
+            setKeyboardMode('select')
+        }
     },
     {
         mode: 'select',

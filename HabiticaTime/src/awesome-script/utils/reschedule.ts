@@ -308,3 +308,65 @@ export function squeezeEvents(calendar: Calendar): void {
 
     calendar.resumeRendering()
 }
+
+export function squeezeOverlapGroup(
+    calendar: Calendar,
+    seed: EventApi
+): { ogroupIds: Set<string>; oldEnd: number; newEnd: number } | null {
+    const sorted = calendar.getEvents().sort((a, b) => a.start.getTime() - b.start.getTime())
+    const ogroups = buildOverlapGroups(sorted)
+    const raw = ogroups.find(g => g.some(e => e.id === seed.id))
+    if (!raw) return null
+
+    // Ghost pins are invisible to this op
+    const ogroup = raw.filter(e => e.extendedProps.pinType !== 'ghost')
+    if (ogroup.length === 0) return null
+
+    const groupStart = getClusterStart(ogroup)
+    const groupEnd = getClusterEnd(ogroup)
+    const spanning = ogroup.filter(
+        e => e.start.getTime() === groupStart && e.end.getTime() === groupEnd
+    )
+    const shorts = ogroup.filter(e => !spanning.includes(e))
+    if (shorts.length === 0) return null
+
+    const columns = buildOverlapGroups(shorts.sort((a, b) => a.start.getTime() - b.start.getTime()))
+
+    // No-op if all columns already packed starting at groupStart AND spanning already matches
+    let expectedStart = groupStart
+    let changed = false
+    for (const col of columns) {
+        if (getClusterStart(col) !== expectedStart) {
+            changed = true
+            break
+        }
+        expectedStart = getClusterEnd(col)
+    }
+    if (!changed && expectedStart === groupEnd) return null
+
+    // Strip groupId so FullCalendar doesn't auto-move 'selected' siblings together
+    const savedGroupIds = new Map<string, string>()
+    for (const e of ogroup) {
+        savedGroupIds.set(e.id, e.groupId)
+        if (e.groupId) e.setProp('groupId', '')
+    }
+
+    calendar.pauseRendering()
+
+    let lastEnd = groupStart
+    for (const col of columns) {
+        shiftCluster(col, new Date(lastEnd))
+        lastEnd = getClusterEnd(col)
+    }
+
+    for (const e of spanning) e.setDates(e.start, new Date(lastEnd))
+
+    for (const e of ogroup) {
+        const g = savedGroupIds.get(e.id)
+        if (g) e.setProp('groupId', g)
+    }
+
+    calendar.resumeRendering()
+
+    return { ogroupIds: new Set(ogroup.map(e => e.id)), oldEnd: groupEnd, newEnd: lastEnd }
+}
